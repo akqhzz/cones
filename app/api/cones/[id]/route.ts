@@ -5,9 +5,10 @@ import path from 'path';
 
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const cone = await getConeById(params.id);
+  const { id } = await params;
+  const cone = await getConeById(id);
   if (!cone) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
@@ -16,17 +17,18 @@ export async function GET(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const { searchParams } = new URL(request.url);
   const sessionId = searchParams.get('session_id') ?? '';
 
-  const cone = await getConeById(params.id);
+  const cone = await getConeById(id);
   if (!cone) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 
-  const deleted = await deleteCone(params.id, sessionId);
+  const deleted = await deleteCone(id, sessionId);
   if (!deleted) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   }

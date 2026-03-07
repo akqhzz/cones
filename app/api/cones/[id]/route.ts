@@ -7,7 +7,7 @@ export async function GET(
   _request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const cone = getConeById(params.id);
+  const cone = await getConeById(params.id);
   if (!cone) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
@@ -21,12 +21,12 @@ export async function DELETE(
   const { searchParams } = new URL(request.url);
   const sessionId = searchParams.get('session_id') ?? '';
 
-  const cone = getConeById(params.id);
+  const cone = await getConeById(params.id);
   if (!cone) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 
-  const deleted = deleteCone(params.id, sessionId);
+  const deleted = await deleteCone(params.id, sessionId);
   if (!deleted) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   }

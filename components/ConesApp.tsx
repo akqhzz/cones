@@ -52,10 +52,9 @@ function Carousel({
   onUploadClick: () => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
-  // Default to viewport width so the carousel is correctly centered on first paint
-  const [containerWidth, setContainerWidth] = useState(() =>
-    typeof window !== 'undefined' ? window.innerWidth : 375
-  );
+  // Use fixed initial width so server and client render the same (avoids hydration mismatch).
+  // ResizeObserver updates to real width after mount.
+  const [containerWidth, setContainerWidth] = useState(375);
   const touchStartX = useRef(0);
   const isDragging = useRef(false);
   const dragStartX = useRef(0);
@@ -199,7 +198,7 @@ function Carousel({
     <div
       ref={containerRef}
       className="relative overflow-hidden select-none w-full"
-      style={{ height: containerH }}
+      style={{ height: `${containerH}px` }}
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
       onMouseDown={cones.length > 0 ? onMouseDown : undefined}

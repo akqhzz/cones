@@ -5,6 +5,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { insertCone, updateConeAnalysis, getConeById } from '@/lib/db';
 import { analyzeCone } from '@/lib/claude';
 import { searchSpotifyTrack } from '@/lib/spotify';
+import { resizeImage } from '@/lib/image-resize';
+import { uploadImageToStorage } from '@/lib/storage';
 
 export const maxDuration = 60;
 
@@ -23,26 +25,51 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'No image provided' }, { status: 400 });
   }
 
-  // Save file
-  const id = uuidv4();
-  const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
-  const filename = `${id}.${ext}`;
-  const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
-
-  await mkdir(uploadsDir, { recursive: true });
-
   const bytes = await file.arrayBuffer();
   const buffer = Buffer.from(bytes);
-  await writeFile(path.join(uploadsDir, filename), buffer);
+  const mimeType = file.type || 'image/jpeg';
 
-  const imagePath = `/uploads/${filename}`;
+  // Resize to keep file size down
+  const { buffer: resizedBuffer, mimeType: outMimeType } = await resizeImage(
+    buffer,
+    mimeType
+  );
+
+  const id = uuidv4();
+  const ext = outMimeType === 'image/jpeg' ? 'jpg' : 'png';
+  const filename = `${id}.${ext}`;
+  let imagePath: string;
+
+  const useSupabaseStorage =
+    process.env.SUPABASE_URL &&
+    (process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY);
+
+  if (useSupabaseStorage) {
+    try {
+      imagePath = await uploadImageToStorage(
+        filename,
+        resizedBuffer,
+        outMimeType
+      );
+    } catch (err) {
+      console.error('Supabase Storage upload failed:', err);
+      return NextResponse.json(
+        { error: 'Image upload failed. Check Storage bucket "cones" exists and is public.' },
+        { status: 500 }
+      );
+    }
+  } else {
+    const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
+    await mkdir(uploadsDir, { recursive: true });
+    await writeFile(path.join(uploadsDir, filename), resizedBuffer);
+    imagePath = `/uploads/${filename}`;
+  }
 
   // Insert placeholder
-  insertCone({ id, session_id: sessionId, image_path: imagePath });
+  await insertCone({ id, session_id: sessionId, image_path: imagePath });
 
-  // Analyze with Claude
+  // Analyze with Claude (use original buffer for analysis for best quality)
   try {
-    const mimeType = file.type || 'image/jpeg';
     const analysis = await analyzeCone(buffer, mimeType);
 
     let spotifyTrackId: string | null = null;
@@ -53,7 +80,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    updateConeAnalysis(id, {
+    await updateConeAnalysis(id, {
       description: analysis.description,
       location: analysis.location,
       about: analysis.about,
@@ -69,12 +96,11 @@ export async function POST(request: NextRequest) {
       is_impostor: analysis.is_impostor ? 1 : 0,
     });
 
-    const cone = getConeById(id);
+    const cone = await getConeById(id);
     return NextResponse.json({ cone });
   } catch (err) {
     console.error('Analysis error:', err);
-    // Return partial cone so client can handle gracefully
-    const cone = getConeById(id);
+    const cone = await getConeById(id);
     return NextResponse.json(
       { cone, error: 'Analysis failed' },
       { status: 500 }

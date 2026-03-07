@@ -7,10 +7,10 @@ export async function GET(request: NextRequest) {
   const sessionId = searchParams.get('session_id') ?? '';
 
   const cones = filter === 'mine' && sessionId
-    ? getMyCones(sessionId)
-    : getAllCones();
+    ? await getMyCones(sessionId)
+    : await getAllCones();
 
-  const total = countAllCones();
+  const total = await countAllCones();
 
   return NextResponse.json({ cones, total });
 }

@@ -1,13 +1,14 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import SpotifyEmbed from './SpotifyEmbed';
+import BandcampEmbed from './BandcampEmbed';
 import type { Cone } from '@/lib/db';
 
 interface ConeProfileProps {
   cone: Cone | null;
   isAnalyzing?: boolean;
   isOwn?: boolean;
+  isInMine?: boolean;
   onClose: () => void;
   onDelete?: () => void;
 }
@@ -24,6 +25,7 @@ export default function ConeProfile({
   cone,
   isAnalyzing,
   isOwn,
+  isInMine,
   onClose,
   onDelete,
 }: ConeProfileProps) {
@@ -37,8 +39,8 @@ export default function ConeProfile({
       if (menuRef.current?.contains(target) || menuRefDesktop.current?.contains(target)) return;
       setShowMenu(false);
     };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    document.addEventListener('click', handler);
+    return () => document.removeEventListener('click', handler);
   }, []);
 
   useEffect(() => {
@@ -118,18 +120,7 @@ export default function ConeProfile({
                 </div>
                 <div>
                   <p className="text-[9px] mb-2">Cone&apos;s Song</p>
-                  {cone.spotify_track_id ? (
-                    <SpotifyEmbed trackId={cone.spotify_track_id} />
-                  ) : cone.song_title ? (
-                    <div className="border border-gray-100 p-3 bg-gray-50">
-                      <p className="text-[10px] leading-tight">{cone.song_title}</p>
-                      <p className="text-[9px] text-gray-400 mt-1">{cone.song_artist}</p>
-                    </div>
-                  ) : (
-                    <div className="border border-gray-100 p-3 bg-gray-50">
-                      <p className="text-[9px] text-gray-400">No song found</p>
-                    </div>
-                  )}
+                  <BandcampEmbed />
                 </div>
               </div>
 
@@ -189,62 +180,86 @@ export default function ConeProfile({
           ) : null}
         </div>
 
-        {/* Footer — mobile only: sticky at viewport bottom */}
+        {/* Footer — mobile: ... next to Close when cone is in MINE */}
         <div className="sticky bottom-0 bg-white flex items-center justify-center gap-2 py-3 pb-safe md:hidden">
-          {isOwn && onDelete && cone && !isAnalyzing && (
-            <div ref={menuRef} className="relative">
+          {isInMine && cone && !isAnalyzing && (
+            <div ref={menuRef} className="relative flex items-center gap-2">
               <button
                 onClick={() => setShowMenu((s) => !s)}
-                className="text-[9px] bg-gray-100 w-8 h-8 rounded-full flex items-center justify-center hover:bg-gray-200 transition-colors cursor-pointer"
+                className="text-[9px] bg-gray-100 w-6 h-6 rounded-full flex items-center justify-center hover:bg-gray-200 transition-colors cursor-pointer leading-none"
               >
-                •••
+                ⋯
               </button>
               {showMenu && (
-                <div className="absolute bottom-full mb-2 left-0 border border-gray-200 bg-white shadow-sm">
-                  <button
-                    onClick={() => { setShowMenu(false); onDelete(); }}
-                    className="block w-full text-left px-4 py-2 text-[10px] hover:bg-gray-50 whitespace-nowrap cursor-pointer"
-                  >
-                    Delete cone
-                  </button>
+                <div
+                  className="absolute bottom-full mb-2 left-0 z-50 border border-gray-200 bg-white shadow-sm min-w-[120px]"
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {onDelete && (
+                    <button
+                      type="button"
+                      onPointerDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onDelete();
+                        setShowMenu(false);
+                      }}
+                      className="block w-full text-left px-4 py-2 text-[10px] hover:bg-gray-50 whitespace-nowrap cursor-pointer"
+                    >
+                      Delete cone
+                    </button>
+                  )}
                 </div>
               )}
             </div>
           )}
           <button
             onClick={onClose}
-            className="text-[9px] bg-gray-100 rounded-full px-4 py-1.5 hover:bg-gray-200 transition-colors uppercase cursor-pointer"
+            className="text-[9px] bg-gray-100 rounded-full px-4 py-1.5 h-6 flex items-center hover:bg-gray-200 transition-colors uppercase cursor-pointer leading-none"
           >
             Close ×
           </button>
         </div>
       </div>
 
-        {/* Desktop: close button below the card, in viewport */}
+        {/* Desktop: ... next to Close when cone is in MINE */}
         <div className="hidden md:flex items-center justify-center gap-2 pt-4 pb-6">
-          {isOwn && onDelete && cone && !isAnalyzing && (
-            <div ref={menuRefDesktop} className="relative">
+          {isInMine && cone && !isAnalyzing && (
+            <div ref={menuRefDesktop} className="relative flex items-center gap-2">
               <button
                 onClick={() => setShowMenu((s) => !s)}
-                className="text-[9px] bg-gray-100 w-8 h-8 rounded-full flex items-center justify-center hover:bg-gray-200 transition-colors cursor-pointer"
+                className="text-[9px] bg-gray-100 w-6 h-6 rounded-full flex items-center justify-center hover:bg-gray-200 transition-colors cursor-pointer leading-none"
               >
-                •••
+                ⋯
               </button>
               {showMenu && (
-                <div className="absolute bottom-full mb-2 left-0 border border-gray-200 bg-white shadow-sm">
-                  <button
-                    onClick={() => { setShowMenu(false); onDelete(); }}
-                    className="block w-full text-left px-4 py-2 text-[10px] hover:bg-gray-50 whitespace-nowrap cursor-pointer"
-                  >
-                    Delete cone
-                  </button>
+                <div
+                  className="absolute bottom-full mb-2 left-0 z-50 border border-gray-200 bg-white shadow-sm min-w-[120px]"
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {onDelete && (
+                    <button
+                      type="button"
+                      onPointerDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onDelete();
+                        setShowMenu(false);
+                      }}
+                      className="block w-full text-left px-4 py-2 text-[10px] hover:bg-gray-50 whitespace-nowrap cursor-pointer"
+                    >
+                      Delete cone
+                    </button>
+                  )}
                 </div>
               )}
             </div>
           )}
           <button
             onClick={onClose}
-            className="text-[9px] bg-gray-100 rounded-full px-4 py-1.5 hover:bg-gray-200 transition-colors uppercase cursor-pointer"
+            className="text-[9px] bg-gray-100 rounded-full px-4 py-1.5 h-6 flex items-center hover:bg-gray-200 transition-colors uppercase cursor-pointer leading-none"
           >
             Close ×
           </button>

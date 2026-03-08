@@ -11,6 +11,7 @@ export async function GET(request: NextRequest) {
     : await getAllCones();
 
   const total = await countAllCones();
+  const totalMine = sessionId ? (await getMyCones(sessionId)).length : 0;
 
-  return NextResponse.json({ cones, total });
+  return NextResponse.json({ cones, total, totalMine });
 }

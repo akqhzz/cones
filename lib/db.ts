@@ -48,7 +48,7 @@ export async function getMyCones(sessionId: string): Promise<Cone[]> {
   const { data: rows, error } = await supabase
     .from('cones')
     .select('*')
-    .eq('session_id', sessionId)
+    .or(`session_id.eq.${sessionId},session_id.eq.__seed__`)
     .order('created_at', { ascending: true });
 
   if (error) throw error;
@@ -148,4 +148,28 @@ export async function countAllCones(): Promise<number> {
 
   if (error) throw error;
   return count ?? 0;
+}
+
+export async function restoreCone(cone: Cone): Promise<void> {
+  const { error } = await supabase.from('cones').insert({
+    id: cone.id,
+    session_id: cone.session_id,
+    image_path: cone.image_path,
+    description: cone.description,
+    location: cone.location,
+    about: cone.about,
+    openness: cone.openness,
+    conscientiousness: cone.conscientiousness,
+    extraversion: cone.extraversion,
+    agreeableness: cone.agreeableness,
+    neuroticism: cone.neuroticism,
+    core_values: cone.core_values,
+    song_title: cone.song_title,
+    song_artist: cone.song_artist,
+    spotify_track_id: cone.spotify_track_id,
+    is_impostor: cone.is_impostor,
+    is_analyzed: cone.is_analyzed,
+    created_at: cone.created_at,
+  });
+  if (error) throw error;
 }

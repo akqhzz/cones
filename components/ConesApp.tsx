@@ -15,7 +15,7 @@ const GAP = 10; // physical gap between cards (equal on all sides)
 // ── Shuffle Icon SVG ─────────────────────────────────────────────────────────
 function ShuffleIcon() {
   return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <polyline points="16 3 21 3 21 8" />
       <line x1="4" y1="20" x2="21" y2="3" />
       <polyline points="21 16 21 21 16 21" />
@@ -56,6 +56,7 @@ function Carousel({
   // ResizeObserver updates to real width after mount.
   const [containerWidth, setContainerWidth] = useState(375);
   const touchStartX = useRef(0);
+  const touchStartY = useRef(0);
   const isDragging = useRef(false);
   const dragStartX = useRef(0);
   const wasDragging = useRef(false);
@@ -153,14 +154,31 @@ function Carousel({
 
   const getOpacity = (i: number) => {
     const d = Math.abs(i - currentIndex);
-    if (d > 4) return 0;
-    if (d > 2) return 0.5;
+    // Keep all cones visible in viewport: gentle fade, minimum 0.5
+    if (d > 4) return 0.5;
+    if (d > 2) return 0.75;
     return 1;
   };
+
+  // Prevent browser back/forward gesture when swiping carousel horizontally (use native listener so preventDefault works)
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || cones.length === 0) return;
+    const handleTouchMove = (e: TouchEvent) => {
+      const x = e.touches[0].clientX;
+      const y = e.touches[0].clientY;
+      const dx = Math.abs(x - touchStartX.current);
+      const dy = Math.abs(y - touchStartY.current);
+      if (dx > dy && dx > 5) e.preventDefault();
+    };
+    el.addEventListener('touchmove', handleTouchMove, { passive: false });
+    return () => el.removeEventListener('touchmove', handleTouchMove);
+  }, [cones.length]);
 
   // Touch
   const onTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
   };
   const onTouchEnd = (e: React.TouchEvent) => {
     const delta = e.changedTouches[0].clientX - touchStartX.current;
@@ -197,8 +215,8 @@ function Carousel({
   return (
     <div
       ref={containerRef}
-      className="relative overflow-hidden select-none w-full"
-      style={{ height: `${containerH}px` }}
+      className="relative overflow-hidden select-none w-full touch-pan-y"
+      style={{ height: `${containerH}px`, touchAction: 'pan-y' }}
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
       onMouseDown={cones.length > 0 ? onMouseDown : undefined}
@@ -306,17 +324,19 @@ function InfoTab() {
 function FilterPills({
   filter,
   totalCount,
+  mineCount,
   onFilter,
 }: {
   filter: 'all' | 'mine';
   totalCount: number;
+  mineCount: number;
   onFilter: (f: 'all' | 'mine') => void;
 }) {
   return (
     <>
       <button
         onClick={() => onFilter('all')}
-        className="flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-full border transition-all cursor-pointer"
+        className="flex items-center gap-1 text-[10px] px-2 py-1.5 rounded-full border transition-all cursor-pointer leading-none"
         style={
           filter === 'all'
             ? { background: 'transparent', color: '#111', borderColor: '#333' }
@@ -328,7 +348,7 @@ function FilterPills({
       </button>
       <button
         onClick={() => onFilter('mine')}
-        className="text-[10px] px-2.5 py-1 rounded-full border transition-all cursor-pointer"
+        className="flex items-center gap-1 text-[10px] px-2 py-1.5 rounded-full border transition-all cursor-pointer leading-none"
         style={
           filter === 'mine'
             ? { background: 'transparent', color: '#111', borderColor: '#333' }
@@ -336,6 +356,7 @@ function FilterPills({
         }
       >
         MINE
+        <span className="opacity-60">({mineCount})</span>
       </button>
     </>
   );
@@ -345,6 +366,7 @@ function FilterPills({
 export default function ConesApp() {
   const [cones, setCones] = useState<Cone[]>([]);
   const [totalCount, setTotalCount] = useState(0);
+  const [mineCount, setMineCount] = useState(0);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [filter, setFilter] = useState<'all' | 'mine'>('all');
   const [activeTab, setActiveTab] = useState<'cones' | 'info'>('cones');
@@ -353,6 +375,8 @@ export default function ConesApp() {
   const [analyzingCone, setAnalyzingCone] = useState<Cone | null>(null);
   const [sessionId, setSessionId] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const undoStackRef = useRef<Cone[]>([]);
+  const redoStackRef = useRef<Cone[]>([]);
 
   useEffect(() => {
     let sid = localStorage.getItem('cones_session_id');
@@ -363,18 +387,22 @@ export default function ConesApp() {
     setSessionId(sid);
   }, []);
 
-  const fetchCones = useCallback(async (f: 'all' | 'mine', sid: string) => {
+  const fetchCones = useCallback(async (f: 'all' | 'mine', sid: string): Promise<Cone[] | void> => {
     if (!sid) return;
     try {
       const res = await fetch(`/api/cones?filter=${f}&session_id=${sid}`);
       const data = await res.json();
-      const list: Cone[] = data.cones ?? [];
+      const list: Cone[] = (data.cones ?? []).sort(
+        (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      );
       setCones(list);
       setTotalCount(data.total ?? 0);
+      setMineCount(data.totalMine ?? 0);
       // Start at center cone (e.g. 8th of 16)
       setCurrentIndex(
         list.length > 0 ? Math.floor((list.length - 1) / 2) : 0
       );
+      return list;
     } catch {
       // ignore
     }
@@ -423,7 +451,8 @@ export default function ConesApp() {
       if (data.cone) {
         setAnalyzingCone(null);
         setSelectedCone(data.cone);
-        await fetchCones('mine', sessionId);
+        const list = await fetchCones('mine', sessionId);
+        if (list?.length) setCurrentIndex(list.length - 1);
         setFilter('mine');
       }
     } catch {
@@ -435,15 +464,77 @@ export default function ConesApp() {
   };
 
   const handleDelete = async (cone: Cone) => {
-    if (!sessionId) return;
-    const res = await fetch(`/api/cones/${cone.id}?session_id=${sessionId}`, {
+    if (!sessionId) {
+      setSelectedCone(null);
+      fetchCones(filter, sessionId);
+      return;
+    }
+    undoStackRef.current.push(cone);
+    redoStackRef.current = [];
+    const res = await fetch(`/api/cones/${cone.id}?session_id=${encodeURIComponent(sessionId)}`, {
       method: 'DELETE',
     });
     if (res.ok) {
       setSelectedCone(null);
       fetchCones(filter, sessionId);
+    } else {
+      undoStackRef.current.pop();
     }
   };
+
+  const handleUndo = useCallback(async () => {
+    const cone = undoStackRef.current.pop();
+    if (!cone || !sessionId) return;
+    try {
+      const res = await fetch('/api/cones/restore', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cone }),
+      });
+      if (res.ok) {
+        redoStackRef.current.push(cone);
+        fetchCones(filter, sessionId);
+      } else {
+        undoStackRef.current.push(cone);
+      }
+    } catch {
+      undoStackRef.current.push(cone);
+    }
+  }, [sessionId, filter, fetchCones]);
+
+  const handleRedo = useCallback(async () => {
+    const cone = redoStackRef.current.pop();
+    if (!cone || !sessionId) return;
+    try {
+      const res = await fetch(`/api/cones/${cone.id}?session_id=${sessionId}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        undoStackRef.current.push(cone);
+        fetchCones(filter, sessionId);
+      } else {
+        redoStackRef.current.push(cone);
+      }
+    } catch {
+      redoStackRef.current.push(cone);
+    }
+  }, [sessionId, filter, fetchCones]);
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'z') {
+        if (e.shiftKey) {
+          e.preventDefault();
+          handleRedo();
+        } else {
+          e.preventDefault();
+          handleUndo();
+        }
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [handleUndo, handleRedo]);
 
   const handleShuffle = () => {
     if (cones.length === 0) return;
@@ -466,8 +557,6 @@ export default function ConesApp() {
       })()
     : '';
 
-  const mineCount = cones.filter((c) => c.session_id === sessionId).length;
-
   return (
     <div className="flex flex-col h-screen bg-white overflow-hidden">
       {/* ── Desktop top nav ── */}
@@ -489,7 +578,7 @@ export default function ConesApp() {
         </nav>
 
         <div className="flex items-center gap-1.5">
-          <FilterPills filter={filter} totalCount={totalCount} onFilter={setFilter} />
+          <FilterPills filter={filter} totalCount={totalCount} mineCount={mineCount} onFilter={setFilter} />
           <button className="ml-1 text-gray-400 hover:text-black transition-colors p-1">
             <FilterIcon />
           </button>
@@ -507,7 +596,7 @@ export default function ConesApp() {
       {/* ── Mobile top filter ── */}
       {activeTab === 'cones' && (
         <div className="md:hidden flex items-center gap-1.5 px-4 pt-3 pb-1">
-          <FilterPills filter={filter} totalCount={totalCount} onFilter={setFilter} />
+          <FilterPills filter={filter} totalCount={totalCount} mineCount={mineCount} onFilter={setFilter} />
         </div>
       )}
 
@@ -556,12 +645,12 @@ export default function ConesApp() {
               {cones.length > 1 ? (
                 <button
                   onClick={handleShuffle}
-                  className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200 transition-all cursor-pointer"
+                  className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200 transition-all cursor-pointer"
                 >
                   <ShuffleIcon />
                 </button>
               ) : (
-                <div className="w-8 h-8" />
+                <div className="w-10 h-10" />
               )}
             </div>
           </div>
@@ -625,6 +714,7 @@ export default function ConesApp() {
           cone={selectedCone}
           isAnalyzing={false}
           isOwn={selectedCone.session_id === sessionId}
+          isInMine={selectedCone.session_id === sessionId || selectedCone.session_id === '__seed__'}
           onClose={() => setSelectedCone(null)}
           onDelete={() => handleDelete(selectedCone)}
         />

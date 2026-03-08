@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import BandcampEmbed from './BandcampEmbed';
+import SpotifyEmbed from './SpotifyEmbed';
 import type { Cone } from '@/lib/db';
 
 interface ConeProfileProps {
@@ -120,7 +120,7 @@ export default function ConeProfile({
                 </div>
                 <div>
                   <p className="text-[9px] mb-2">Cone&apos;s Song</p>
-                  <BandcampEmbed />
+                  <SpotifyEmbed trackId="0fSkyMme1Ze8ewpcbsiuIs" />
                 </div>
               </div>
 

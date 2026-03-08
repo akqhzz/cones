@@ -25,10 +25,7 @@ const MOCK_DESCRIPTIONS = [
 ];
 const MOCK_LOCATIONS = ['Downtown Toronto', 'East Side Brooklyn', 'Midtown Atlanta', 'South Loop Chicago'];
 const MOCK_SONGS = [
-  { title: 'Road to Nowhere', artist: 'Talking Heads' },
-  { title: 'Orange Sky', artist: 'Alexi Murdoch' },
-  { title: 'Standing Outside a Broken Phone Booth', artist: 'Primitive Radio Gods' },
-  { title: 'Waiting', artist: 'Tom Petty' },
+  { title: '#3', artist: 'Aphex Twin' },
 ];
 const MOCK_VALUES = [
   ['Safety', 'Duty', 'Perseverance', 'Vigilance', 'Resilience'],

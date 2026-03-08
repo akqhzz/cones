@@ -34,10 +34,13 @@ function parseRow(row: ConeRow, index: number): Cone {
   };
 }
 
+const CONES_SELECT =
+  'id, session_id, image_path, description, location, about, openness, conscientiousness, extraversion, agreeableness, neuroticism, core_values, song_title, song_artist, spotify_track_id, is_impostor, is_analyzed, created_at';
+
 export async function getAllCones(): Promise<Cone[]> {
   const { data: rows, error } = await supabase
     .from('cones')
-    .select('*')
+    .select(CONES_SELECT)
     .order('created_at', { ascending: true });
 
   if (error) throw error;
@@ -47,8 +50,8 @@ export async function getAllCones(): Promise<Cone[]> {
 export async function getMyCones(sessionId: string): Promise<Cone[]> {
   const { data: rows, error } = await supabase
     .from('cones')
-    .select('*')
-    .or(`session_id.eq.${sessionId},session_id.eq.__seed__`)
+    .select(CONES_SELECT)
+    .eq('session_id', sessionId)
     .order('created_at', { ascending: true });
 
   if (error) throw error;
@@ -58,7 +61,7 @@ export async function getMyCones(sessionId: string): Promise<Cone[]> {
 export async function getConeById(id: string): Promise<Cone | null> {
   const { data: row, error } = await supabase
     .from('cones')
-    .select('*')
+    .select(CONES_SELECT)
     .eq('id', id)
     .single();
 

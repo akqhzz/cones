@@ -120,7 +120,15 @@ export default function ConeProfile({
                 </div>
                 <div>
                   <p className="text-[9px] mb-2">Cone&apos;s Song</p>
-                  <SpotifyEmbed trackId="0fSkyMme1Ze8ewpcbsiuIs" />
+                  {cone.spotify_track_id != null && String(cone.spotify_track_id).trim() !== '' ? (
+                    <SpotifyEmbed
+                      trackId={cone.spotify_track_id}
+                      trackTitle={cone.song_title ?? undefined}
+                      artistName={cone.song_artist ?? undefined}
+                    />
+                  ) : (
+                    <p className="text-[9px] text-gray-500">No song linked</p>
+                  )}
                 </div>
               </div>
 
@@ -216,7 +224,7 @@ export default function ConeProfile({
           )}
           <button
             onClick={onClose}
-            className="text-[9px] bg-gray-100 rounded-full px-4 py-1.5 h-6 flex items-center hover:bg-gray-200 transition-colors uppercase cursor-pointer leading-none"
+            className="text-[9px] bg-black text-white rounded-full px-2.5 py-1.5 h-6 flex items-center hover:bg-gray-800 transition-colors uppercase cursor-pointer leading-none"
           >
             Close ×
           </button>
@@ -259,7 +267,7 @@ export default function ConeProfile({
           )}
           <button
             onClick={onClose}
-            className="text-[9px] bg-gray-100 rounded-full px-4 py-1.5 h-6 flex items-center hover:bg-gray-200 transition-colors uppercase cursor-pointer leading-none"
+            className="text-[9px] bg-black text-white rounded-full px-4 py-1.5 h-6 flex items-center hover:bg-gray-800 transition-colors uppercase cursor-pointer leading-none"
           >
             Close ×
           </button>

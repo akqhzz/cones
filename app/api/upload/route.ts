@@ -80,6 +80,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const defaultTrackId = '7glKwbR1DyuIuE6XvZvJbQ';
+    const defaultSongTitle = '#3';
+    const defaultSongArtist = 'Aphex Twin';
+
     await updateConeAnalysis(id, {
       description: analysis.description,
       location: analysis.location,
@@ -90,9 +94,9 @@ export async function POST(request: NextRequest) {
       agreeableness: analysis.big_five?.agreeableness ?? null,
       neuroticism: analysis.big_five?.neuroticism ?? null,
       core_values: analysis.core_values ?? [],
-      song_title: analysis.song?.title ?? null,
-      song_artist: analysis.song?.artist ?? null,
-      spotify_track_id: spotifyTrackId,
+      song_title: analysis.song?.title ?? defaultSongTitle,
+      song_artist: analysis.song?.artist ?? defaultSongArtist,
+      spotify_track_id: spotifyTrackId ?? defaultTrackId,
       is_impostor: analysis.is_impostor ? 1 : 0,
     });
 

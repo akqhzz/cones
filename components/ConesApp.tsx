@@ -7,6 +7,7 @@ import {
   useState,
   useMemo,
 } from 'react';
+import { useRouter } from 'next/navigation';
 import ConeProfile from './ConeProfile';
 import type { Cone } from '@/lib/db';
 
@@ -43,13 +44,15 @@ function Carousel({
   onOpenProfile,
   filter,
   onUploadClick,
+  loading,
 }: {
   cones: Cone[];
   currentIndex: number;
   onChange: (i: number) => void;
-  onOpenProfile: (cone: Cone) => void;
+  onOpenProfile: (cone: Cone, index: number) => void;
   filter: 'all' | 'mine';
   onUploadClick: () => void;
+  loading?: boolean;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   // Use fixed initial width so server and client render the same (avoids hydration mismatch).
@@ -224,7 +227,11 @@ function Carousel({
       onMouseUp={cones.length > 0 ? onMouseUp : undefined}
       onMouseLeave={() => { isDragging.current = false; }}
     >
-      {cones.length === 0 ? (
+      {loading ? (
+        <div className="flex items-center justify-center h-full">
+          <p className="text-[10px] uppercase text-gray-400">Loading...</p>
+        </div>
+      ) : cones.length === 0 ? (
         filter === 'mine' ? (
           <div className="flex items-center justify-center h-full">
             <p className="text-[10px] uppercase text-black">
@@ -275,7 +282,7 @@ function Carousel({
                 onClick={() => {
                   if (wasDragging.current) return;
                   if (isActive) {
-                    onOpenProfile(cone);
+                    onOpenProfile(cone, i);
                   } else {
                     onChange(i);
                   }
@@ -365,18 +372,19 @@ function FilterPills({
 // ── Main App ──────────────────────────────────────────────────────────────────
 export default function ConesApp() {
   const [cones, setCones] = useState<Cone[]>([]);
+  const [conesLoading, setConesLoading] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
   const [mineCount, setMineCount] = useState(0);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [filter, setFilter] = useState<'all' | 'mine'>('all');
   const [activeTab, setActiveTab] = useState<'cones' | 'info'>('cones');
-  const [selectedCone, setSelectedCone] = useState<Cone | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [analyzingCone, setAnalyzingCone] = useState<Cone | null>(null);
   const [sessionId, setSessionId] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const undoStackRef = useRef<Cone[]>([]);
   const redoStackRef = useRef<Cone[]>([]);
+  const router = useRouter();
 
   useEffect(() => {
     let sid = localStorage.getItem('cones_session_id');
@@ -389,6 +397,7 @@ export default function ConesApp() {
 
   const fetchCones = useCallback(async (f: 'all' | 'mine', sid: string): Promise<Cone[] | void> => {
     if (!sid) return;
+    setConesLoading(true);
     try {
       const res = await fetch(`/api/cones?filter=${f}&session_id=${sid}`);
       const data = await res.json();
@@ -405,6 +414,8 @@ export default function ConesApp() {
       return list;
     } catch {
       // ignore
+    } finally {
+      setConesLoading(false);
     }
   }, []);
 
@@ -450,9 +461,11 @@ export default function ConesApp() {
       const data = await res.json();
       if (data.cone) {
         setAnalyzingCone(null);
-        setSelectedCone(data.cone);
         const list = await fetchCones('mine', sessionId);
-        if (list?.length) setCurrentIndex(list.length - 1);
+        if (list?.length) {
+          setCurrentIndex(list.length - 1);
+          router.push(`/cones/${list.length - 1}?filter=mine`);
+        }
         setFilter('mine');
       }
     } catch {
@@ -465,7 +478,7 @@ export default function ConesApp() {
 
   const handleDelete = async (cone: Cone) => {
     if (!sessionId) {
-      setSelectedCone(null);
+      router.push('/');
       fetchCones(filter, sessionId);
       return;
     }
@@ -475,7 +488,7 @@ export default function ConesApp() {
       method: 'DELETE',
     });
     if (res.ok) {
-      setSelectedCone(null);
+      router.push('/');
       fetchCones(filter, sessionId);
     } else {
       undoStackRef.current.pop();
@@ -623,7 +636,7 @@ export default function ConesApp() {
                       .join(', ')}
                   </p>
                 </>
-              ) : filter === 'mine' && mineCount === 0 ? null : (
+              ) : conesLoading ? null : filter === 'mine' && mineCount === 0 ? null : (
                 <p className="text-[10px] uppercase text-black">
                   Loading...
                 </p>
@@ -635,9 +648,10 @@ export default function ConesApp() {
               cones={cones}
               currentIndex={currentIndex}
               onChange={setCurrentIndex}
-              onOpenProfile={setSelectedCone}
+              onOpenProfile={(cone, index) => router.push(`/cones/${index}${filter === 'mine' ? '?filter=mine' : ''}`)}
               filter={filter}
               onUploadClick={() => fileInputRef.current?.click()}
+              loading={conesLoading}
             />
 
             {/* Shuffle button */}
@@ -706,17 +720,6 @@ export default function ConesApp() {
             setFilter('mine');
             setActiveTab('cones');
           }}
-        />
-      )}
-
-      {selectedCone && !analyzingCone && (
-        <ConeProfile
-          cone={selectedCone}
-          isAnalyzing={false}
-          isOwn={selectedCone.session_id === sessionId}
-          isInMine={selectedCone.session_id === sessionId || selectedCone.session_id === '__seed__'}
-          onClose={() => setSelectedCone(null)}
-          onDelete={() => handleDelete(selectedCone)}
         />
       )}
     </div>

@@ -393,7 +393,7 @@ export default function ConesApp() {
       const res = await fetch(`/api/cones?filter=${f}&session_id=${sid}`);
       const data = await res.json();
       const list: Cone[] = (data.cones ?? []).sort(
-        (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+        (a: Cone, b: Cone) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
       );
       setCones(list);
       setTotalCount(data.total ?? 0);

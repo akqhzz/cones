@@ -11,6 +11,10 @@ interface ConeProfileProps {
   isInMine?: boolean;
   onClose: () => void;
   onDelete?: () => void;
+  onPrevious?: () => void;
+  onNext?: () => void;
+  hasPrevious?: boolean;
+  hasNext?: boolean;
 }
 
 const BIG_FIVE = [
@@ -28,20 +32,72 @@ export default function ConeProfile({
   isInMine,
   onClose,
   onDelete,
+  onPrevious,
+  onNext,
+  hasPrevious = false,
+  hasNext = false,
 }: ConeProfileProps) {
-  const [showMenu, setShowMenu] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-  const menuRefDesktop = useRef<HTMLDivElement>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const confirmRef = useRef<HTMLDivElement>(null);
+  const confirmRefDesktop = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       const target = e.target as Node;
-      if (menuRef.current?.contains(target) || menuRefDesktop.current?.contains(target)) return;
-      setShowMenu(false);
+      if (confirmRef.current?.contains(target) || confirmRefDesktop.current?.contains(target)) return;
+      setShowDeleteConfirm(false);
     };
     document.addEventListener('click', handler);
     return () => document.removeEventListener('click', handler);
   }, []);
+
+  const navButtonClass = 'text-[9px] bg-white text-black border border-gray-400 rounded-full w-6 h-6 flex items-center justify-center hover:bg-gray-100 transition-colors cursor-pointer leading-none disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white';
+
+  const deleteButton = isInMine && cone && !isAnalyzing && onDelete && (
+    <>
+      <button
+        type="button"
+        onClick={() => setShowDeleteConfirm(true)}
+        className={navButtonClass}
+        aria-label="Delete cone"
+      >
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="3 6 5 6 21 6" />
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+          <line x1="10" y1="11" x2="10" y2="17" />
+          <line x1="14" y1="11" x2="14" y2="17" />
+        </svg>
+      </button>
+      {showDeleteConfirm && (
+        <div
+          className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 z-50 border border-gray-200 bg-white shadow-sm rounded overflow-hidden min-w-[140px]"
+          onMouseDown={(e) => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <p className="px-3 py-2 text-[10px] text-gray-600 border-b border-gray-100">Delete this cone?</p>
+          <div className="flex gap-2 p-2">
+            <button
+              type="button"
+              onClick={() => {
+                onDelete();
+                setShowDeleteConfirm(false);
+              }}
+              className="flex-1 text-[9px] uppercase bg-white text-black border border-gray-400 rounded-full py-1.5 h-6 flex items-center justify-center hover:bg-gray-100 transition-colors cursor-pointer leading-none border-red-300 text-red-700 hover:bg-red-50"
+            >
+              Delete
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowDeleteConfirm(false)}
+              className="flex-1 text-[9px] uppercase bg-white text-black border border-gray-200 rounded-full py-1.5 h-6 flex items-center justify-center hover:bg-gray-100 transition-colors cursor-pointer leading-none"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+    </>
+  );
 
   useEffect(() => {
     document.body.style.overflow = 'hidden';
@@ -58,24 +114,27 @@ export default function ConeProfile({
       })()
     : '';
 
+  // Show impostor view only when cone is marked as impostor
+  const showAsImpostor = Boolean(cone?.is_impostor);
+
   return (
     <div
       className="fixed inset-0 z-50 bg-white overflow-y-auto md:flex md:items-center md:justify-center md:overflow-hidden"
       onClick={(e) => {
-        if (e.target === e.currentTarget && typeof window !== 'undefined' && window.innerWidth >= 768) {
+        if (typeof window !== 'undefined' && window.innerWidth >= 768 && e.target === e.currentTarget) {
           onClose();
         }
       }}
     >
       {/*
         Mobile: card fills screen with sticky footer inside.
-        Desktop: card + close button below card, both in viewport.
+        Desktop: inner is 460px so backdrop receives clicks on the sides; click backdrop to close.
       */}
       <div
-        className="relative w-full flex flex-col min-h-screen md:min-h-0 md:flex md:flex-col md:items-center"
+        className="relative w-full flex flex-col min-h-screen md:min-h-0 md:flex md:flex-col md:items-center md:w-[460px]"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="w-full flex flex-col min-h-screen md:min-h-0 md:w-[460px] md:max-h-[92vh] md:overflow-y-auto md:border md:border-gray-200">
+        <div className="relative w-full flex flex-col min-h-screen md:min-h-0 md:max-h-[92vh] md:overflow-y-auto md:border md:border-gray-200">
 
         {/* Scrollable content */}
         <div className="flex-1">
@@ -86,7 +145,7 @@ export default function ConeProfile({
               <p className="text-[9px] text-gray-400 mt-1">Close to continue in background</p>
             </div>
 
-          ) : cone?.is_impostor ? (
+          ) : showAsImpostor && cone ? (
             <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6 p-8">
               {cone.image_path && (
                 <img src={cone.image_path} alt="Impostor" className="w-28 h-28 object-cover grayscale opacity-50" />
@@ -104,7 +163,7 @@ export default function ConeProfile({
               {/* Top: image + song */}
               <div className="grid grid-cols-2 gap-0.5 px-5 py-4">
                 <div>
-                  <p className="text-[9px] mb-2">(Cone No.{cone.index})</p>
+                  <p className="text-[9px] mb-2">(No.{cone.index}) {formattedDate}</p>
                   <div className="w-28 h-28 overflow-hidden bg-gray-50 flex-shrink-0">
                     <img
                       src={cone.image_path}
@@ -112,11 +171,12 @@ export default function ConeProfile({
                       className="w-full h-full object-cover"
                     />
                   </div>
-                  {cone.location && (
+              {/*}
+                  {formattedDate && (
                     <p className="text-[9px] text-gray-400 mt-2">
-                      {cone.location}{formattedDate ? `, ${formattedDate}` : ''}
+                      {formattedDate}
                     </p>
-                  )}
+                  )} */}
                 </div>
                 <div>
                   <p className="text-[9px] mb-2">Cone&apos;s Song</p>
@@ -165,6 +225,12 @@ export default function ConeProfile({
                       </div>
                     );
                   })}
+                  {cone.sloan && (
+                    <div className="flex justify-between items-center pt-0.5">
+                      <span className="text-[10px]">SLOAN</span>
+                      <span className="text-[10px] font-medium">{cone.sloan}</span>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -188,88 +254,62 @@ export default function ConeProfile({
           ) : null}
         </div>
 
-        {/* Footer — mobile: ... next to Close when cone is in MINE */}
+        {/* Footer — mobile: Prev, Delete, Close, Next */}
         <div className="sticky bottom-0 bg-white flex items-center justify-center gap-2 py-3 pb-safe md:hidden">
-          {isInMine && cone && !isAnalyzing && (
-            <div ref={menuRef} className="relative flex items-center gap-2">
-              <button
-                onClick={() => setShowMenu((s) => !s)}
-                className="text-[9px] bg-gray-100 w-6 h-6 rounded-full flex items-center justify-center hover:bg-gray-200 transition-colors cursor-pointer leading-none"
-              >
-                ⋯
-              </button>
-              {showMenu && (
-                <div
-                  className="absolute bottom-full mb-2 left-0 z-50 border border-gray-200 bg-white shadow-sm min-w-[120px]"
-                  onMouseDown={(e) => e.stopPropagation()}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {onDelete && (
-                    <button
-                      type="button"
-                      onPointerDown={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        onDelete();
-                        setShowMenu(false);
-                      }}
-                      className="block w-full text-left px-4 py-2 text-[10px] hover:bg-gray-50 whitespace-nowrap cursor-pointer"
-                    >
-                      Delete cone
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
+          <button
+            type="button"
+            aria-label="Previous cone"
+            onClick={onPrevious}
+            disabled={!hasPrevious}
+            className={navButtonClass}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
+          </button>
+          {deleteButton && <div ref={confirmRef} className="relative">{deleteButton}</div>}
           <button
             onClick={onClose}
-            className="text-[9px] bg-black text-white rounded-full px-2.5 py-1.5 h-6 flex items-center hover:bg-gray-800 transition-colors uppercase cursor-pointer leading-none"
+            className="text-[9px] bg-white text-black border border-gray-400 rounded-full pl-2.5 pr-2 py-1.5 h-6 flex items-center gap-2 hover:bg-gray-100 transition-colors uppercase cursor-pointer leading-none"
           >
-            Close ×
+            Close <span className="text-[10px] font-medium leading-none inline-flex items-center text-gray-500 -translate-y-0.5">×</span>
+          </button>
+          <button
+            type="button"
+            aria-label="Next cone"
+            onClick={onNext}
+            disabled={!hasNext}
+            className={navButtonClass}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
           </button>
         </div>
       </div>
 
-        {/* Desktop: ... next to Close when cone is in MINE */}
+        {/* Desktop: Prev, Delete, Close, Next */}
         <div className="hidden md:flex items-center justify-center gap-2 pt-4 pb-6">
-          {isInMine && cone && !isAnalyzing && (
-            <div ref={menuRefDesktop} className="relative flex items-center gap-2">
-              <button
-                onClick={() => setShowMenu((s) => !s)}
-                className="text-[9px] bg-gray-100 w-6 h-6 rounded-full flex items-center justify-center hover:bg-gray-200 transition-colors cursor-pointer leading-none"
-              >
-                ⋯
-              </button>
-              {showMenu && (
-                <div
-                  className="absolute bottom-full mb-2 left-0 z-50 border border-gray-200 bg-white shadow-sm min-w-[120px]"
-                  onMouseDown={(e) => e.stopPropagation()}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {onDelete && (
-                    <button
-                      type="button"
-                      onPointerDown={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        onDelete();
-                        setShowMenu(false);
-                      }}
-                      className="block w-full text-left px-4 py-2 text-[10px] hover:bg-gray-50 whitespace-nowrap cursor-pointer"
-                    >
-                      Delete cone
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
+          <button
+            type="button"
+            aria-label="Previous cone"
+            onClick={onPrevious}
+            disabled={!hasPrevious}
+            className={navButtonClass}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
+          </button>
+          {deleteButton && <div ref={confirmRefDesktop} className="relative">{deleteButton}</div>}
           <button
             onClick={onClose}
-            className="text-[9px] bg-black text-white rounded-full px-4 py-1.5 h-6 flex items-center hover:bg-gray-800 transition-colors uppercase cursor-pointer leading-none"
+            className="text-[9px] bg-white text-black border border-gray-400 rounded-full pl-4 pr-2 py-1.5 h-6 flex items-center gap-2 hover:bg-gray-100 transition-colors uppercase cursor-pointer leading-none"
           >
-            Close ×
+            Close <span className="text-[10px] font-medium leading-none inline-flex items-center text-gray-500 -translate-y-0.5">×</span>
+          </button>
+          <button
+            type="button"
+            aria-label="Next cone"
+            onClick={onNext}
+            disabled={!hasNext}
+            className={navButtonClass}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
           </button>
         </div>
       </div>

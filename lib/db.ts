@@ -16,6 +16,7 @@ export interface ConeRow {
   song_title: string | null;
   song_artist: string | null;
   spotify_track_id: string | null;
+  sloan: string | null;
   is_impostor: number;
   is_analyzed: number;
   created_at: string;
@@ -35,7 +36,7 @@ function parseRow(row: ConeRow, index: number): Cone {
 }
 
 const CONES_SELECT =
-  'id, session_id, image_path, description, location, about, openness, conscientiousness, extraversion, agreeableness, neuroticism, core_values, song_title, song_artist, spotify_track_id, is_impostor, is_analyzed, created_at';
+  'id, session_id, image_path, description, location, about, openness, conscientiousness, extraversion, agreeableness, neuroticism, core_values, song_title, song_artist, spotify_track_id, sloan, is_impostor, is_analyzed, created_at';
 
 export async function getAllCones(): Promise<Cone[]> {
   const { data: rows, error } = await supabase
@@ -103,6 +104,7 @@ export async function updateConeAnalysis(
     song_title: string | null;
     song_artist: string | null;
     spotify_track_id: string | null;
+    sloan: string | null;
     is_impostor: number;
   }
 ): Promise<void> {
@@ -121,6 +123,7 @@ export async function updateConeAnalysis(
       song_title: data.song_title,
       song_artist: data.song_artist,
       spotify_track_id: data.spotify_track_id,
+      sloan: data.sloan,
       is_impostor: data.is_impostor,
       is_analyzed: 1,
     })
@@ -170,6 +173,7 @@ export async function restoreCone(cone: Cone): Promise<void> {
     song_title: cone.song_title,
     song_artist: cone.song_artist,
     spotify_track_id: cone.spotify_track_id,
+    sloan: cone.sloan,
     is_impostor: cone.is_impostor,
     is_analyzed: cone.is_analyzed,
     created_at: cone.created_at,

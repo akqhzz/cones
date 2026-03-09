@@ -1,5 +1,3 @@
-import Anthropic from '@anthropic-ai/sdk';
-
 export interface ConeAnalysis {
   is_impostor: boolean;
   description: string | null;
@@ -12,37 +10,48 @@ export interface ConeAnalysis {
     agreeableness: number;
     neuroticism: number;
   } | null;
+  /** 5-letter Big Five summary e.g. "RLUAI" (Openness, Conscientiousness, Extraversion, Agreeableness, Neuroticism) */
+  sloan?: string | null;
   core_values: string[];
   song: { title: string; artist: string } | null;
 }
 
 const MOCK_DESCRIPTIONS = [
-  'Stalwart Orange Sentinel',
-  'Vigilant Asphalt Guardian',
-  'Solitary Meridian Watcher',
-  'Weathered Urban Beacon',
-  'Stoic Roadside Prophet',
+  'The Urban Explorer',
+  'The Scarred Survivor',
+  'The Gatekeeper',
+  'The Commuter',
+  'The Retired Artist',
 ];
-const MOCK_LOCATIONS = ['Downtown Toronto', 'East Side Brooklyn', 'Midtown Atlanta', 'South Loop Chicago'];
-const MOCK_SONGS = [
-  { title: '#3', artist: 'Aphex Twin' },
-];
+/**const MOCK_LOCATIONS = ['Downtown Toronto', 'East Side Brooklyn', 'Midtown Atlanta', 'South Loop Chicago'];*/
 const MOCK_VALUES = [
-  ['Safety', 'Duty', 'Perseverance', 'Vigilance', 'Resilience'],
-  ['Order', 'Loyalty', 'Courage', 'Tradition', 'Stability'],
+  ['Honor', 'Loyalty', 'Perseverance', 'Vigilance', 'Kindness'],
+  ['Belonging', 'Loyalty', 'Courage', 'Patience', 'Stability'],
   ['Self-direction', 'Benevolence', 'Stimulation', 'Hedonism', 'Universalism'],
 ];
 
-function mockAnalysis(): ConeAnalysis {
+const MOCK_ABOUTS = [
+  'A steadfast guardian of the urban thoroughfare, this cone has witnessed countless commuters rush past without so much as a glance. Born of high-density polyethylene and a deep sense of purpose, it stands resolute through rain, exhaust, and the occasional errant shopping cart. Beneath its reflective collar beats the heart of a true civil servant.',
+  'This cone carries the quiet dignity of one who has chosen the margins over the spotlight. It does not demand attention; it earns it through consistency. Rain or shine, it holds the line—a modest monument to order in a world of chaos.',
+  'Here stands a cone that has seen fender benders, parades, and midnight street sweepers. It speaks no language but presence. To the hurried driver it is obstacle; to the anthropologist it is artifact. Either way, it remains.',
+];
+
+const MOCK_SLOANS = [
+  'SCOAI', 'SCOAN', 'SCOEI', 'SCOEN', 'SCUAI', 'SCUAN', 'SCUEI', 'SCUEN',
+  'SLOAI', 'SLOAN', 'SLOEI', 'SLOEN', 'SLUAI', 'SLUAN', 'SLUEI', 'SLUEN',
+  'RCOAI', 'RCOAN', 'RCOEI', 'RCOEN', 'RCUAI', 'RCUAN', 'RCUEI', 'RCUEN',
+  'RLOAI', 'RLOAN', 'RLOEI', 'RLOEN', 'RLUAI', 'RLUAN', 'RLUEI', 'RLUEN',
+];
+
+export function mockAnalysis(): ConeAnalysis {
   const pick = <T>(arr: T[]) => arr[Math.floor(Math.random() * arr.length)];
   const rand = (min: number, max: number) =>
     Math.floor(Math.random() * (max - min + 1)) + min;
   return {
     is_impostor: false,
     description: pick(MOCK_DESCRIPTIONS),
-    location: pick(MOCK_LOCATIONS),
-    about:
-      'A steadfast guardian of the urban thoroughfare, this cone has witnessed countless commuters rush past without so much as a glance. Born of high-density polyethylene and a deep sense of purpose, it stands resolute through rain, exhaust, and the occasional errant shopping cart. Beneath its reflective collar beats the heart of a true civil servant.',
+    location: null,
+    about: pick(MOCK_ABOUTS),
     big_five: {
       openness: rand(30, 95),
       conscientiousness: rand(30, 95),
@@ -50,8 +59,9 @@ function mockAnalysis(): ConeAnalysis {
       agreeableness: rand(40, 95),
       neuroticism: rand(15, 70),
     },
+    sloan: pick(MOCK_SLOANS),
     core_values: pick(MOCK_VALUES),
-    song: pick(MOCK_SONGS),
+    song: null,
   };
 }
 
@@ -59,85 +69,7 @@ export async function analyzeCone(
   imageBuffer: Buffer,
   mimeType: string
 ): Promise<ConeAnalysis> {
-  // Use mock data when no API key is configured
-  if (!process.env.ANTHROPIC_API_KEY) {
-    await new Promise((r) => setTimeout(r, 1500)); // simulate latency
-    return mockAnalysis();
-  }
-
-  const client = new Anthropic();
-  const base64 = imageBuffer.toString('base64');
-
-  const validMimeTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-  const safeMimeType = validMimeTypes.includes(mimeType) ? mimeType : 'image/jpeg';
-
-  const response = await client.messages.create({
-    model: 'claude-sonnet-4-6',
-    max_tokens: 1024,
-    messages: [
-      {
-        role: 'user',
-        content: [
-          {
-            type: 'image',
-            source: {
-              type: 'base64',
-              media_type: safeMimeType as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp',
-              data: base64,
-            },
-          },
-          {
-            type: 'text',
-            text: `Analyze this image carefully. Is this a traffic cone (road cone / construction cone)?
-
-Return ONLY a raw JSON object with no markdown, no explanation, just the JSON:
-
-If it IS a traffic cone:
-{
-  "is_impostor": false,
-  "description": "3 evocative words that name this cone (e.g. 'Lonely Midnight Sentinel')",
-  "location": "Guessed city or context (e.g. 'Downtown Toronto' or 'Highway Interchange')",
-  "about": "2-3 sentences written as if this cone were a person with a distinct personality and story",
-  "big_five": {
-    "openness": 75,
-    "conscientiousness": 60,
-    "extraversion": 45,
-    "agreeableness": 80,
-    "neuroticism": 30
-  },
-  "core_values": ["Safety", "Duty", "Vigilance", "Resilience", "Perseverance"],
-  "song": {
-    "title": "exact song title that matches this cone's vibe",
-    "artist": "exact artist name"
-  }
-}
-
-If it is NOT a traffic cone:
-{
-  "is_impostor": true,
-  "description": "IMPOSTOR DETECTED",
-  "location": null,
-  "about": "Brief humorous note about what this actually is and why it's not welcome in the cone archive",
-  "big_five": null,
-  "core_values": [],
-  "song": null
-}`,
-          },
-        ],
-      },
-    ],
-  });
-
-  const text =
-    response.content[0].type === 'text' ? response.content[0].text.trim() : '';
-
-  try {
-    return JSON.parse(text);
-  } catch {
-    const match = text.match(/\{[\s\S]*\}/);
-    if (match) {
-      return JSON.parse(match[0]);
-    }
-    throw new Error('Failed to parse Claude response: ' + text.slice(0, 200));
-  }
+  // When no Gemini key: use mock only (do not call Claude)
+  await new Promise((r) => setTimeout(r, 1500)); // simulate latency
+  return mockAnalysis();
 }

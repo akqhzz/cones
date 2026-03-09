@@ -85,7 +85,7 @@ async function main() {
     getConeById,
   } = await import('../lib/db');
   const { analyzeCone } = await import('../lib/claude');
-  const { searchSpotifyTrack } = await import('../lib/spotify');
+  const { getSongForSloan } = await import('../lib/song-pool');
 
   for (let i = 0; i < files.length; i++) {
     const file = files[i];
@@ -123,17 +123,7 @@ async function main() {
 
     try {
       const analysis = await analyzeCone(buffer, mimeType);
-      let spotifyTrackId: string | null = null;
-      if (!analysis.is_impostor && analysis.song) {
-        try {
-          spotifyTrackId = await searchSpotifyTrack(
-            analysis.song.title,
-            analysis.song.artist
-          );
-        } catch {
-          // ignore
-        }
-      }
+      const song = getSongForSloan(analysis.sloan ?? null);
 
       await updateConeAnalysis(id, {
         description: analysis.description,
@@ -145,9 +135,10 @@ async function main() {
         agreeableness: analysis.big_five?.agreeableness ?? null,
         neuroticism: analysis.big_five?.neuroticism ?? null,
         core_values: analysis.core_values ?? [],
-        song_title: analysis.song?.title ?? null,
-        song_artist: analysis.song?.artist ?? null,
-        spotify_track_id: spotifyTrackId,
+        song_title: song.song_title,
+        song_artist: song.song_artist,
+        spotify_track_id: song.spotify_track_id,
+        sloan: analysis.sloan ?? null,
         is_impostor: analysis.is_impostor ? 1 : 0,
       });
 

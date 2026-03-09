@@ -15,6 +15,8 @@ export default function ConePage() {
   const [sessionId, setSessionId] = useState('');
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [displayCount, setDisplayCount] = useState<number | null>(null);
+  const [displayCones, setDisplayCones] = useState<Cone[] | null>(null);
 
   useEffect(() => {
     const sid = typeof window !== 'undefined' ? localStorage.getItem('cones_session_id') ?? '' : '';
@@ -22,33 +24,147 @@ export default function ConePage() {
   }, []);
 
   useEffect(() => {
-    const index = indexParam === null ? NaN : parseInt(indexParam, 10);
-    if (indexParam === null || !Number.isInteger(index) || index < 0) {
+    const idParam = indexParam ?? '';
+    const idNum = parseInt(idParam, 10);
+    const isNumericId = /^\d+$/.test(idParam) && Number.isInteger(idNum) && idNum >= 1;
+
+    if (indexParam === null || indexParam === '') {
       setLoading(false);
       setNotFound(true);
       return;
     }
+
+    // Restore from sessionStorage so nav bar never disappears on prev/next (after router.replace)
+    if (isNumericId && typeof window !== 'undefined') {
+      try {
+        const stored = sessionStorage.getItem('cones_display_list');
+        if (stored) {
+          const list = JSON.parse(stored) as Cone[];
+          const c = list[idNum - 1];
+          if (c) {
+            setDisplayCones(list);
+            setCone(c);
+            setDisplayCount(list.length);
+            setLoading(false);
+            setNotFound(false);
+            sessionStorage.setItem('cones_return_index', String(idNum - 1));
+            return;
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    // Client-side prev/next: we already have the list in state, just switch cone (no loading, nav stays)
+    if (isNumericId && displayCones && displayCones[idNum - 1]) {
+      setCone(displayCones[idNum - 1]);
+      setDisplayCount(displayCones.length);
+      setLoading(false);
+      setNotFound(false);
+      if (typeof window !== 'undefined') sessionStorage.setItem('cones_return_index', String(idNum - 1));
+      return;
+    }
+
+    // Instant show: use cone passed from carousel via sessionStorage (same URL key)
+    if (typeof window !== 'undefined') {
+      try {
+        const key = sessionStorage.getItem('cones_profile_key');
+        const cached = sessionStorage.getItem('cones_profile_cone');
+          if (key === idParam && cached) {
+          const c = JSON.parse(cached) as Cone;
+          sessionStorage.removeItem('cones_profile_key');
+          sessionStorage.removeItem('cones_profile_cone');
+          setCone(c);
+          setLoading(false);
+          setNotFound(false);
+          // Still fetch in background to refresh
+          if (isNumericId) {
+            const arrayIndex = idNum - 1;
+            const sid = localStorage.getItem('cones_session_id') ?? '';
+            fetch(`/api/cones?filter=${filter}&session_id=${encodeURIComponent(sid)}`)
+              .then((res) => res.json())
+              .then((data) => {
+                const list: Cone[] = (data.cones ?? []).sort(
+                  (a: Cone, b: Cone) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+                );
+                const displayCones = list.filter((c: Cone) => !c.is_impostor);
+                setDisplayCount(displayCones.length);
+                setDisplayCones(displayCones);
+                const fresh = displayCones[arrayIndex];
+                if (fresh) setCone(fresh);
+                if (typeof window !== 'undefined') {
+                  sessionStorage.setItem('cones_display_list', JSON.stringify(displayCones));
+                  sessionStorage.setItem('cones_return_index', String(arrayIndex));
+                }
+              })
+              .catch(() => {});
+          } else {
+            fetch(`/api/cones/${encodeURIComponent(idParam)}`)
+              .then((res) => res.ok ? res.json() : Promise.reject(new Error('Not found')))
+              .then((fresh: Cone) => setCone(fresh))
+              .catch(() => {});
+          }
+          return;
+        }
+      } catch {
+        // ignore parse error, fall through to fetch
+      }
+    }
+
     let cancelled = false;
     setLoading(true);
     setNotFound(false);
-    const sid = typeof window !== 'undefined' ? localStorage.getItem('cones_session_id') ?? '' : '';
-    fetch(`/api/cones?filter=${filter}&session_id=${encodeURIComponent(sid)}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (cancelled) return;
-        const list: Cone[] = (data.cones ?? []).sort(
-          (a: Cone, b: Cone) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-        );
-        const c = list[index];
-        if (c) setCone(c);
-        else setNotFound(true);
-      })
-      .catch(() => {
-        if (!cancelled) setNotFound(true);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
+
+    if (isNumericId) {
+      // 1-based index into displayCones: /cones/1, /cones/2, ...
+      const arrayIndex = idNum - 1;
+      const sid = typeof window !== 'undefined' ? localStorage.getItem('cones_session_id') ?? '' : '';
+      fetch(`/api/cones?filter=${filter}&session_id=${encodeURIComponent(sid)}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (cancelled) return;
+          const list: Cone[] = (data.cones ?? []).sort(
+            (a: Cone, b: Cone) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+          );
+          const displayCones = list.filter((c: Cone) => !c.is_impostor);
+          const c = displayCones[arrayIndex];
+          if (c) {
+            setCone(c);
+            setDisplayCount(displayCones.length);
+            setDisplayCones(displayCones);
+            if (typeof window !== 'undefined') {
+              sessionStorage.setItem('cones_display_list', JSON.stringify(displayCones));
+              sessionStorage.setItem('cones_return_index', String(arrayIndex));
+            }
+          } else setNotFound(true);
+        })
+        .catch(() => {
+          if (!cancelled) setNotFound(true);
+        })
+        .finally(() => {
+          if (!cancelled) setLoading(false);
+        });
+    } else {
+      // Cone by id (e.g. after upload impostor): /cones/[uuid]
+      fetch(`/api/cones/${encodeURIComponent(idParam)}`)
+        .then((res) => {
+          if (!res.ok) throw new Error('Not found');
+          return res.json();
+        })
+        .then((c: Cone) => {
+          if (cancelled) return;
+          setCone(c);
+          setDisplayCount(null); // no prev/next when viewing by id
+        })
+        .catch(() => {
+          if (!cancelled) setNotFound(true);
+        })
+        .finally(() => {
+          if (!cancelled) setLoading(false);
+        });
+    }
+
     return () => { cancelled = true; };
   }, [indexParam, filter]);
 
@@ -91,6 +207,37 @@ export default function ConePage() {
       isInMine={cone.session_id === sessionId}
       onClose={() => router.back()}
       onDelete={handleDelete}
+      onPrevious={
+        indexParam && /^\d+$/.test(indexParam) && displayCones
+          ? () => {
+              const newId = parseInt(indexParam, 10) - 1;
+              if (typeof window !== 'undefined') {
+                sessionStorage.setItem('cones_display_list', JSON.stringify(displayCones));
+                sessionStorage.setItem('cones_return_index', String(newId - 1));
+              }
+              router.replace(`/cones/${newId}${filter === 'mine' ? '?filter=mine' : ''}`);
+            }
+          : undefined
+      }
+      onNext={
+        indexParam && /^\d+$/.test(indexParam) && displayCones
+          ? () => {
+              const newId = parseInt(indexParam, 10) + 1;
+              if (typeof window !== 'undefined') {
+                sessionStorage.setItem('cones_display_list', JSON.stringify(displayCones));
+                sessionStorage.setItem('cones_return_index', String(newId - 1));
+              }
+              router.replace(`/cones/${newId}${filter === 'mine' ? '?filter=mine' : ''}`);
+            }
+          : undefined
+      }
+      hasPrevious={indexParam != null && /^\d+$/.test(indexParam) && parseInt(indexParam, 10) > 1}
+      hasNext={
+        displayCount != null &&
+        indexParam != null &&
+        /^\d+$/.test(indexParam) &&
+        parseInt(indexParam, 10) < displayCount
+      }
     />
   );
 }

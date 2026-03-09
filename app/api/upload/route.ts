@@ -4,7 +4,8 @@ import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import { insertCone, updateConeAnalysis, getConeById } from '@/lib/db';
 import { analyzeCone } from '@/lib/claude';
-import { searchSpotifyTrack } from '@/lib/spotify';
+import { analyzeConeWithGemini } from '@/lib/gemini';
+import { getSongForSloan } from '@/lib/song-pool';
 import { resizeImage } from '@/lib/image-resize';
 import { uploadImageToStorage } from '@/lib/storage';
 
@@ -68,25 +69,17 @@ export async function POST(request: NextRequest) {
   // Insert placeholder
   await insertCone({ id, session_id: sessionId, image_path: imagePath });
 
-  // Analyze with Claude (use original buffer for analysis for best quality)
+  // Analyze with Gemini when key is set; otherwise use mock data only (no Claude)
   try {
-    const analysis = await analyzeCone(buffer, mimeType);
+    const analysis = process.env.GEMINI_API_KEY
+      ? await analyzeConeWithGemini(buffer, mimeType)
+      : await analyzeCone(buffer, mimeType);
 
-    let spotifyTrackId: string | null = null;
-    if (!analysis.is_impostor && analysis.song) {
-      spotifyTrackId = await searchSpotifyTrack(
-        analysis.song.title,
-        analysis.song.artist
-      );
-    }
-
-    const defaultTrackId = '7glKwbR1DyuIuE6XvZvJbQ';
-    const defaultSongTitle = '#3';
-    const defaultSongArtist = 'Aphex Twin';
+    const song = getSongForSloan(analysis.sloan ?? null);
 
     await updateConeAnalysis(id, {
       description: analysis.description,
-      location: analysis.location,
+      location: null,
       about: analysis.about,
       openness: analysis.big_five?.openness ?? null,
       conscientiousness: analysis.big_five?.conscientiousness ?? null,
@@ -94,9 +87,10 @@ export async function POST(request: NextRequest) {
       agreeableness: analysis.big_five?.agreeableness ?? null,
       neuroticism: analysis.big_five?.neuroticism ?? null,
       core_values: analysis.core_values ?? [],
-      song_title: analysis.song?.title ?? defaultSongTitle,
-      song_artist: analysis.song?.artist ?? defaultSongArtist,
-      spotify_track_id: spotifyTrackId ?? defaultTrackId,
+      song_title: song.song_title,
+      song_artist: song.song_artist,
+      spotify_track_id: song.spotify_track_id,
+      sloan: analysis.sloan ?? null,
       is_impostor: analysis.is_impostor ? 1 : 0,
     });
 

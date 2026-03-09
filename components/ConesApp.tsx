@@ -11,7 +11,8 @@ import { useRouter } from 'next/navigation';
 import ConeProfile from './ConeProfile';
 import type { Cone } from '@/lib/db';
 
-const GAP = 10; // physical gap between cards (equal on all sides)
+const GAP_MOBILE = 10; // gap between cards on mobile
+const GAP_DESKTOP = 120; // much more spacing on desktop
 
 // ── Shuffle Icon SVG ─────────────────────────────────────────────────────────
 function ShuffleIcon() {
@@ -36,6 +37,22 @@ function FilterIcon() {
   );
 }
 
+// ── Carousel nav arrows (desktop) ─────────────────────────────────────────────
+function LeftArrowIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="15 18 9 12 15 6" />
+    </svg>
+  );
+}
+function RightArrowIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="9 18 15 12 9 6" />
+    </svg>
+  );
+}
+
 // ── Carousel ──────────────────────────────────────────────────────────────────
 function Carousel({
   cones,
@@ -45,6 +62,8 @@ function Carousel({
   filter,
   onUploadClick,
   loading,
+  wheelDisabled = false,
+  instantPosition = false,
 }: {
   cones: Cone[];
   currentIndex: number;
@@ -53,6 +72,8 @@ function Carousel({
   filter: 'all' | 'mine';
   onUploadClick: () => void;
   loading?: boolean;
+  wheelDisabled?: boolean;
+  instantPosition?: boolean;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   // Use fixed initial width so server and client render the same (avoids hydration mismatch).
@@ -69,24 +90,28 @@ function Carousel({
   const lastSnapTime = useRef(0);
   const wheelResetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Base card size — responsive to container width
+  // Base card size — responsive to container width. Desktop (≥768): smaller cones; mobile: unchanged.
   const ITEM_W = useMemo(() => {
     if (containerWidth < 360) return 88;
     if (containerWidth < 480) return 108;
     if (containerWidth < 768) return 126;
-    if (containerWidth < 1200) return 144;
-    if (containerWidth < 1600) return 180;
-    return 220;
+    if (containerWidth < 1200) return 64;
+    if (containerWidth < 1600) return 72;
+    return 80;
   }, [containerWidth]);
+  const isDesktop = containerWidth >= 768;
+  const GAP = isDesktop ? GAP_DESKTOP : GAP_MOBILE;
 
-  // Card size by distance from active index — center unchanged; all non-center cards same smaller size (squares)
+  // Center cone scale: on desktop make only the center bigger; mobile keeps 1.38
+  const centerScale = isDesktop ? 2.2 : 1.38;
+  // Card size by distance from active index — center larger; all non-center cards same smaller size (squares)
   const getCardSize = useCallback(
     (i: number) => {
       const d = Math.abs(i - currentIndex);
-      if (d === 0) return Math.round(ITEM_W * 1.38);
+      if (d === 0) return Math.round(ITEM_W * centerScale);
       return Math.round(ITEM_W * 0.62);
     },
-    [currentIndex, ITEM_W]
+    [currentIndex, ITEM_W, centerScale]
   );
 
   // Translate so the active card is centered
@@ -112,6 +137,7 @@ function Carousel({
 
   // Smooth trackpad / wheel scrolling
   useEffect(() => {
+    if (wheelDisabled) return;
     const el = containerRef.current;
     if (!el || cones.length === 0) return;
 
@@ -153,7 +179,7 @@ function Carousel({
       el.removeEventListener('wheel', handleWheel);
       if (wheelResetTimer.current) clearTimeout(wheelResetTimer.current);
     };
-  }, [currentIndex, cones.length, onChange]);
+  }, [currentIndex, cones.length, onChange, wheelDisabled]);
 
   const getOpacity = (i: number) => {
     const d = Math.abs(i - currentIndex);
@@ -212,7 +238,7 @@ function Carousel({
 
   // Container always renders with the ref so ResizeObserver can measure correctly.
   // Empty state is rendered inside rather than as an early return.
-  const centerSize = Math.round(ITEM_W * 1.38);
+  const centerSize = Math.round(ITEM_W * centerScale);
   const containerH = centerSize + 20;
 
   return (
@@ -255,7 +281,7 @@ function Carousel({
           className="absolute inset-y-0 flex items-center cursor-grab active:cursor-grabbing"
           style={{
             transform: `translateX(${translateX}px)`,
-            transition: 'transform 0.36s cubic-bezier(0.4, 0, 0.2, 1)',
+            transition: instantPosition ? 'none' : 'transform 0.36s cubic-bezier(0.4, 0, 0.2, 1)',
             gap: GAP,
             willChange: 'transform',
           }}
@@ -268,12 +294,13 @@ function Carousel({
             return (
               <div
                 key={cone.id}
-                className="flex-shrink-0 overflow-hidden bg-gray-50"
+                className="flex-shrink-0 overflow-hidden bg-gray-50 group"
                 style={{
                   width: size,
                   height: size,
-                  transition:
-                    'width 0.36s cubic-bezier(0.4, 0, 0.2, 1), height 0.36s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.36s',
+                  transition: instantPosition
+                    ? 'none'
+                    : 'width 0.36s cubic-bezier(0.4, 0, 0.2, 1), height 0.36s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.36s',
                   opacity,
                   cursor: 'pointer',
                   zIndex: isActive ? 10 : 1,
@@ -295,6 +322,13 @@ function Carousel({
                     className="w-full h-full object-cover pointer-events-none"
                     draggable={false}
                   />
+                )}
+                {isActive && isDesktop && (
+                  <div
+                    className="absolute bottom-1 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none"
+                  >
+                    👀
+                  </div>
                 )}
               </div>
             );
@@ -340,7 +374,7 @@ function FilterPills({
   onFilter: (f: 'all' | 'mine') => void;
 }) {
   return (
-    <>
+    <div className="flex items-center gap-1">
       <button
         onClick={() => onFilter('all')}
         className="flex items-center gap-1 text-[10px] px-2 py-1.5 rounded-full border transition-all cursor-pointer leading-none"
@@ -365,7 +399,95 @@ function FilterPills({
         MINE
         <span className="opacity-60">({mineCount})</span>
       </button>
-    </>
+    </div>
+  );
+}
+
+// ── Index View (grid of cone rows) ─────────────────────────────────────────────
+function IndexView({
+  cones,
+  onOpenProfile,
+  loading,
+  scrollToIndex,
+  onScrolledToIndex,
+}: {
+  cones: Cone[];
+  onOpenProfile: (cone: Cone, index: number) => void;
+  loading?: boolean;
+  scrollToIndex?: number | null;
+  onScrolledToIndex?: () => void;
+}) {
+  const formatDate = (created_at: string) => {
+    const d = new Date(created_at);
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const yy = String(d.getFullYear()).slice(2);
+    return `${mm}/${dd}/${yy}`;
+  };
+
+  useEffect(() => {
+    if (scrollToIndex == null || scrollToIndex < 0 || scrollToIndex >= cones.length) return;
+    const el = document.getElementById('index-view-scroll-target');
+    if (el) {
+      el.scrollIntoView({ block: 'center', behavior: 'auto' });
+      onScrolledToIndex?.();
+    }
+  }, [scrollToIndex, cones.length, onScrolledToIndex]);
+
+  if (loading) {
+    return (
+      <div className="flex-1 flex items-center justify-center py-12">
+        <p className="text-[10px] uppercase text-gray-400">Loading...</p>
+      </div>
+    );
+  }
+
+  if (cones.length === 0) {
+    return (
+      <div className="flex-1 flex items-center justify-center py-12">
+        <p className="text-[10px] uppercase text-gray-300">No cones yet</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex-1 overflow-y-auto px-4 pt-12 pb-4">
+      <div
+        className="grid gap-x-4 gap-y-12 w-full md:gap-x-32"
+        style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}
+      >
+        {cones.map((cone, i) => (
+          <button
+            key={cone.id}
+            type="button"
+            id={scrollToIndex === i ? 'index-view-scroll-target' : undefined}
+            onClick={() => onOpenProfile(cone, i)}
+            className="w-full flex items-start gap-3 text-left rounded border border-transparent p-2 pr-0 md:pr-2 md:-m-2"
+          >
+            <span className="text-[10px] text-black flex-shrink-0 w-6 leading-tight">
+              ({String(cone.index).padStart(2, '0')})
+            </span>
+            <div className="flex-1 min-w-0 space-y-0.5">
+              <p className="text-[10px] uppercase leading-tight truncate text-black">
+                {cone.description || (cone.is_analyzed ? '—' : 'Analyzing...')}
+              </p>
+              <p className="text-[10px] text-black leading-tight">
+                {formatDate(cone.created_at)}
+              </p>
+            </div>
+            <div className="w-20 h-20 flex-shrink-0 overflow-hidden bg-gray-100">
+              {cone.image_path && (
+                <img
+                  src={cone.image_path}
+                  alt={cone.description || 'Cone'}
+                  className="w-full h-full object-cover"
+                />
+              )}
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -377,6 +499,7 @@ export default function ConesApp() {
   const [mineCount, setMineCount] = useState(0);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [filter, setFilter] = useState<'all' | 'mine'>('all');
+  const [viewMode, setViewMode] = useState<'list' | 'index'>('list');
   const [activeTab, setActiveTab] = useState<'cones' | 'info'>('cones');
   const [isUploading, setIsUploading] = useState(false);
   const [analyzingCone, setAnalyzingCone] = useState<Cone | null>(null);
@@ -384,7 +507,20 @@ export default function ConesApp() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const undoStackRef = useRef<Cone[]>([]);
   const redoStackRef = useRef<Cone[]>([]);
+  const pendingRestoreIndexRef = useRef<number | null>(null);
+  const hasCachedConesRef = useRef(false);
+  const [restoreInstant, setRestoreInstant] = useState(false);
+  const [returnScrollIndex, setReturnScrollIndex] = useState<number | null>(null);
   const router = useRouter();
+
+  // Desktop: page-level horizontal wheel/touch so swipe moves carousel and doesn't trigger browser back
+  const [isDesktop, setIsDesktop] = useState(false);
+  const conesContentRef = useRef<HTMLDivElement>(null);
+  const pageWheelAccumulator = useRef(0);
+  const pageLastSnapTime = useRef(0);
+  const pageWheelResetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pageTouchStartX = useRef(0);
+  const pageTouchStartY = useRef(0);
 
   useEffect(() => {
     let sid = localStorage.getItem('cones_session_id');
@@ -393,11 +529,69 @@ export default function ConesApp() {
       localStorage.setItem('cones_session_id', sid);
     }
     setSessionId(sid);
+    // Restore carousel position when returning from a cone profile
+    if (typeof window !== 'undefined') {
+      const returnIndex = sessionStorage.getItem('cones_return_index');
+      const returnFilter = sessionStorage.getItem('cones_return_filter');
+      const returnView = sessionStorage.getItem('cones_return_view');
+      if (returnIndex != null && returnFilter) {
+        setFilter(returnFilter as 'all' | 'mine');
+        pendingRestoreIndexRef.current = parseInt(returnIndex, 10);
+        if (returnView === 'index') {
+          setViewMode('index');
+          setReturnScrollIndex(parseInt(returnIndex, 10));
+          sessionStorage.removeItem('cones_return_view');
+        }
+        sessionStorage.removeItem('cones_return_index');
+        sessionStorage.removeItem('cones_return_filter');
+      }
+      // Instant carousel: show cached list while fetching
+      try {
+        const cached = sessionStorage.getItem('cones_carousel_cache');
+        const cachedFilter = sessionStorage.getItem('cones_carousel_filter');
+        const cachedTotals = sessionStorage.getItem('cones_carousel_totals');
+        if (cached && cachedFilter) {
+          const list = JSON.parse(cached) as Cone[];
+          setCones(list);
+          setFilter(cachedFilter as 'all' | 'mine');
+          if (cachedTotals) {
+            const t = JSON.parse(cachedTotals) as { total: number; mine: number };
+            setTotalCount(t.total);
+            setMineCount(t.mine);
+          }
+          setConesLoading(false);
+          hasCachedConesRef.current = true;
+          if (pendingRestoreIndexRef.current !== null) {
+            const displayCones = list.filter((c) => !c.is_impostor);
+            const idx = Math.min(
+              Math.max(0, pendingRestoreIndexRef.current),
+              Math.max(0, displayCones.length - 1)
+            );
+            setCurrentIndex(idx);
+            setRestoreInstant(true);
+            pendingRestoreIndexRef.current = null;
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const m = window.matchMedia('(min-width: 768px)');
+    setIsDesktop(m.matches);
+    const fn = () => setIsDesktop(m.matches);
+    m.addEventListener('change', fn);
+    return () => m.removeEventListener('change', fn);
   }, []);
 
   const fetchCones = useCallback(async (f: 'all' | 'mine', sid: string): Promise<Cone[] | void> => {
     if (!sid) return;
-    setConesLoading(true);
+    const skipLoading = hasCachedConesRef.current;
+    if (skipLoading) hasCachedConesRef.current = false;
+    if (!skipLoading) setConesLoading(true);
     try {
       const res = await fetch(`/api/cones?filter=${f}&session_id=${sid}`);
       const data = await res.json();
@@ -407,10 +601,20 @@ export default function ConesApp() {
       setCones(list);
       setTotalCount(data.total ?? 0);
       setMineCount(data.totalMine ?? 0);
-      // Start at center cone (e.g. 8th of 16)
-      setCurrentIndex(
-        list.length > 0 ? Math.floor((list.length - 1) / 2) : 0
-      );
+      if (!skipLoading) {
+        const displayCones = list.filter((c: Cone) => !c.is_impostor);
+        setCurrentIndex(
+          displayCones.length > 0 ? Math.floor((displayCones.length - 1) / 2) : 0
+        );
+      }
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('cones_carousel_cache', JSON.stringify(list));
+        sessionStorage.setItem('cones_carousel_filter', f);
+        sessionStorage.setItem(
+          'cones_carousel_totals',
+          JSON.stringify({ total: data.total ?? 0, mine: data.totalMine ?? 0 })
+        );
+      }
       return list;
     } catch {
       // ignore
@@ -419,9 +623,90 @@ export default function ConesApp() {
     }
   }, []);
 
+  // Cones shown in carousel exclude impostors
+  const displayCones = useMemo(
+    () => cones.filter((c) => !c.is_impostor),
+    [cones]
+  );
+
   useEffect(() => {
     if (sessionId) fetchCones(filter, sessionId);
   }, [sessionId, filter, fetchCones]);
+
+  // Restore carousel index when returning from cone profile (after cones are loaded)
+  useEffect(() => {
+    if (displayCones.length > 0 && pendingRestoreIndexRef.current !== null) {
+      const idx = Math.min(
+        Math.max(0, pendingRestoreIndexRef.current),
+        displayCones.length - 1
+      );
+      setCurrentIndex(idx);
+      setRestoreInstant(true);
+      pendingRestoreIndexRef.current = null;
+    }
+  }, [displayCones.length]);
+
+  // Clear instant-position flag after one paint so next user navigation still animates
+  useEffect(() => {
+    if (!restoreInstant) return;
+    const id = requestAnimationFrame(() => setRestoreInstant(false));
+    return () => cancelAnimationFrame(id);
+  }, [restoreInstant]);
+
+  // Desktop cones tab: capture horizontal wheel/touch on whole area — move carousel, prevent browser back/forward
+  useEffect(() => {
+    if (!isDesktop || activeTab !== 'cones') return;
+    const el = conesContentRef.current;
+    if (!el) return;
+
+    const SNAP_COOLDOWN = 1000; // one step per gesture no matter how hard/long you scroll
+    const THRESHOLD = 2; // very light horizontal scroll still moves carousel
+
+    const handleWheel = (e: WheelEvent) => {
+      const isHorizontal = Math.abs(e.deltaX) >= Math.abs(e.deltaY) || Math.abs(e.deltaX) > 1;
+      if (!isHorizontal) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+
+      const now = Date.now();
+      if (now - pageLastSnapTime.current < SNAP_COOLDOWN) return;
+
+      const delta = Math.abs(e.deltaX) >= Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+      if (Math.abs(delta) < THRESHOLD) return;
+
+      const dir = delta > 0 ? 1 : -1;
+      setCurrentIndex((i) => Math.min(displayCones.length - 1, Math.max(0, i + dir)));
+      pageLastSnapTime.current = now;
+    };
+
+    const handleTouchStart = (e: TouchEvent) => {
+      pageTouchStartX.current = e.touches[0].clientX;
+      pageTouchStartY.current = e.touches[0].clientY;
+    };
+    const handleTouchMove = (e: TouchEvent) => {
+      const dx = Math.abs(e.touches[0].clientX - pageTouchStartX.current);
+      const dy = Math.abs(e.touches[0].clientY - pageTouchStartY.current);
+      if (dx > dy && dx > 8) e.preventDefault();
+    };
+    const handleTouchEnd = (e: TouchEvent) => {
+      const delta = e.changedTouches[0].clientX - pageTouchStartX.current;
+      if (delta < -40) setCurrentIndex((i) => Math.min(displayCones.length - 1, i + 1));
+      else if (delta > 40) setCurrentIndex((i) => Math.max(0, i - 1));
+    };
+
+    el.addEventListener('wheel', handleWheel, { passive: false, capture: true });
+    el.addEventListener('touchstart', handleTouchStart, { passive: true });
+    el.addEventListener('touchmove', handleTouchMove, { passive: false });
+    el.addEventListener('touchend', handleTouchEnd, { passive: true });
+
+    return () => {
+      el.removeEventListener('wheel', handleWheel, { capture: true });
+      el.removeEventListener('touchstart', handleTouchStart);
+      el.removeEventListener('touchmove', handleTouchMove);
+      el.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [isDesktop, activeTab, displayCones.length]);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -462,9 +747,18 @@ export default function ConesApp() {
       if (data.cone) {
         setAnalyzingCone(null);
         const list = await fetchCones('mine', sessionId);
-        if (list?.length) {
-          setCurrentIndex(list.length - 1);
-          router.push(`/cones/${list.length - 1}?filter=mine`);
+        const displayCones = list ? list.filter((c: Cone) => !c.is_impostor) : [];
+        if (data.cone.is_impostor) {
+          setFilter('mine');
+          sessionStorage.setItem('cones_profile_key', data.cone.id);
+          sessionStorage.setItem('cones_profile_cone', JSON.stringify(data.cone));
+          router.push(`/cones/${data.cone.id}?filter=mine`);
+        } else if (displayCones.length > 0) {
+          setCurrentIndex(displayCones.length - 1);
+          const urlKey = String(displayCones.length);
+          sessionStorage.setItem('cones_profile_key', urlKey);
+          sessionStorage.setItem('cones_profile_cone', JSON.stringify(displayCones[displayCones.length - 1]));
+          router.push(`/cones/${urlKey}?filter=mine`);
         }
         setFilter('mine');
       }
@@ -550,15 +844,15 @@ export default function ConesApp() {
   }, [handleUndo, handleRedo]);
 
   const handleShuffle = () => {
-    if (cones.length === 0) return;
+    if (displayCones.length === 0) return;
     let newIdx = currentIndex;
-    while (newIdx === currentIndex && cones.length > 1) {
-      newIdx = Math.floor(Math.random() * cones.length);
+    while (newIdx === currentIndex && displayCones.length > 1) {
+      newIdx = Math.floor(Math.random() * displayCones.length);
     }
     setCurrentIndex(newIdx);
   };
 
-  const activeCone = cones[currentIndex];
+  const activeCone = displayCones[currentIndex];
 
   const formattedActiveDate = activeCone?.created_at
     ? (() => {
@@ -597,19 +891,69 @@ export default function ConesApp() {
           </button>
         </div>
 
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          disabled={isUploading}
-          className="w-7 h-7 rounded-full bg-black text-white flex items-center justify-center text-sm leading-none hover:bg-gray-800 transition-colors disabled:opacity-50 cursor-pointer"
-        >
-          +
-        </button>
+        <div className="flex items-center gap-4">
+          <div className="inline-flex items-center gap-2 rounded-full">
+            <button
+              type="button"
+              onClick={() => setViewMode('list')}
+              className="text-[11px] font-medium uppercase text-[#888] hover:text-gray-700 select-none cursor-pointer transition-colors"
+            >
+              List
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode(viewMode === 'list' ? 'index' : 'list')}
+              className={`flex items-center rounded-full h-[22px] w-[34px] p-0.5 bg-[#f4f4f4] cursor-pointer shrink-0 ${viewMode === 'list' ? 'justify-start' : 'justify-end'}`}
+              aria-label={viewMode === 'list' ? 'Switch to index view' : 'Switch to list view'}
+            >
+              <span className="w-2 h-2 rounded-full bg-[#333] shrink-0 transition-all duration-150" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('index')}
+              className="text-[11px] font-medium uppercase text-[#888] hover:text-gray-700 select-none cursor-pointer transition-colors"
+            >
+              Index
+            </button>
+          </div>
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploading}
+            className="w-7 h-7 rounded-full bg-black text-white flex items-center justify-center text-sm leading-none hover:bg-gray-800 transition-colors disabled:opacity-50 cursor-pointer"
+          >
+            +
+          </button>
+        </div>
       </header>
 
       {/* ── Mobile top filter ── */}
       {activeTab === 'cones' && (
-        <div className="md:hidden flex items-center gap-1.5 px-4 pt-3 pb-1">
+        <div className="md:hidden flex items-center justify-between gap-2 px-4 pt-3 pb-1">
           <FilterPills filter={filter} totalCount={totalCount} mineCount={mineCount} onFilter={setFilter} />
+          <div className="inline-flex items-center gap-2 rounded-full">
+            <button
+              type="button"
+              onClick={() => setViewMode('list')}
+              className="text-[11px] font-medium uppercase text-[#888] hover:text-gray-700 select-none cursor-pointer transition-colors"
+            >
+              List
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode(viewMode === 'list' ? 'index' : 'list')}
+              className={`flex items-center rounded-full h-[22px] w-[34px] p-0.5 bg-[#f4f4f4] cursor-pointer shrink-0 ${viewMode === 'list' ? 'justify-start' : 'justify-end'}`}
+              aria-label={viewMode === 'list' ? 'Switch to index view' : 'Switch to list view'}
+            >
+              <span className="w-2 h-2 rounded-full bg-[#333] shrink-0 transition-all duration-150" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('index')}
+              className="text-[11px] font-medium uppercase text-[#888] hover:text-gray-700 select-none cursor-pointer transition-colors"
+            >
+              Index
+            </button>
+          </div>
         </div>
       )}
 
@@ -617,8 +961,28 @@ export default function ConesApp() {
       <main className="flex-1 flex flex-col overflow-hidden">
         {activeTab === 'info' ? (
           <InfoTab />
+        ) : viewMode === 'index' ? (
+          <IndexView
+            cones={displayCones}
+            loading={conesLoading}
+            scrollToIndex={returnScrollIndex}
+            onScrolledToIndex={() => setReturnScrollIndex(null)}
+            onOpenProfile={(cone, index) => {
+              sessionStorage.setItem('cones_return_index', String(index));
+              sessionStorage.setItem('cones_return_filter', filter);
+              sessionStorage.setItem('cones_return_view', 'index');
+              sessionStorage.setItem('cones_display_list', JSON.stringify(displayCones));
+              const urlKey = String(index + 1);
+              sessionStorage.setItem('cones_profile_key', urlKey);
+              sessionStorage.setItem('cones_profile_cone', JSON.stringify(cone));
+              router.push(`/cones/${urlKey}${filter === 'mine' ? '?filter=mine' : ''}`);
+            }}
+          />
         ) : (
-          <div className="flex-1 flex flex-col justify-evenly py-4 overflow-hidden">
+          <div
+            ref={conesContentRef}
+            className="flex-1 flex flex-col justify-evenly py-4 overflow-hidden"
+          >
             {/* Info text */}
             <div className="flex flex-col items-center text-center px-4 space-y-0 leading-none [&>p]:leading-tight">
               {activeCone ? (
@@ -630,11 +994,11 @@ export default function ConesApp() {
                     {activeCone.description ||
                       (activeCone.is_analyzed ? '—' : 'Analyzing...')}
                   </p>
-                  <p className="text-[10px] uppercase text-black">
-                    {[activeCone.location, formattedActiveDate]
-                      .filter(Boolean)
-                      .join(', ')}
-                  </p>
+                  {formattedActiveDate && (
+                    <p className="text-[10px] uppercase text-black">
+                      {formattedActiveDate}
+                    </p>
+                  )}
                 </>
               ) : conesLoading ? null : filter === 'mine' && mineCount === 0 ? null : (
                 <p className="text-[10px] uppercase text-black">
@@ -645,18 +1009,38 @@ export default function ConesApp() {
 
             {/* Carousel — full viewport width, no centering wrapper */}
             <Carousel
-              cones={cones}
+              cones={displayCones}
               currentIndex={currentIndex}
               onChange={setCurrentIndex}
-              onOpenProfile={(cone, index) => router.push(`/cones/${index}${filter === 'mine' ? '?filter=mine' : ''}`)}
+              wheelDisabled={isDesktop}
+              instantPosition={restoreInstant}
+              onOpenProfile={(cone, index) => {
+                sessionStorage.setItem('cones_return_index', String(index));
+                sessionStorage.setItem('cones_return_filter', filter);
+                sessionStorage.setItem('cones_display_list', JSON.stringify(displayCones));
+                const urlKey = String(index + 1);
+                sessionStorage.setItem('cones_profile_key', urlKey);
+                sessionStorage.setItem('cones_profile_cone', JSON.stringify(cone));
+                router.push(`/cones/${urlKey}${filter === 'mine' ? '?filter=mine' : ''}`);
+              }}
               filter={filter}
               onUploadClick={() => fileInputRef.current?.click()}
               loading={conesLoading}
             />
 
-            {/* Shuffle button */}
-            <div className="flex justify-center">
-              {cones.length > 1 ? (
+            {/* Shuffle button — desktop: with left/right arrows */}
+            <div className="flex justify-center items-center gap-2">
+              {/* Desktop: left arrow */}
+              <button
+                type="button"
+                aria-label="Previous cone"
+                onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}
+                disabled={displayCones.length <= 1 || currentIndex === 0}
+                className="hidden md:flex w-10 h-10 rounded-full bg-white items-center justify-center text-gray-500 hover:bg-gray-50 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-gray-100"
+              >
+                <LeftArrowIcon />
+              </button>
+              {displayCones.length > 1 ? (
                 <button
                   onClick={handleShuffle}
                   className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200 transition-all cursor-pointer"
@@ -666,6 +1050,16 @@ export default function ConesApp() {
               ) : (
                 <div className="w-10 h-10" />
               )}
+              {/* Desktop: right arrow */}
+              <button
+                type="button"
+                aria-label="Next cone"
+                onClick={() => setCurrentIndex((i) => Math.min(displayCones.length - 1, i + 1))}
+                disabled={displayCones.length <= 1 || currentIndex === displayCones.length - 1}
+                className="hidden md:flex w-10 h-10 rounded-full bg-white items-center justify-center text-gray-500 hover:bg-gray-50 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-gray-100"
+              >
+                <RightArrowIcon />
+              </button>
             </div>
           </div>
         )}

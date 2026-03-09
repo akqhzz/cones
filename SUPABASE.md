@@ -41,6 +41,12 @@ create index if not exists cones_session_id_idx on public.cones (session_id);
 create index if not exists cones_created_at_idx on public.cones (created_at asc);
 ```
 
+To add the **SLOAN** (5-letter Big Five summary) column used by the Gemini analyzer, run **supabase/migrations/002_add_sloan.sql**:
+
+```sql
+alter table if exists public.cones add column if not exists sloan text;
+```
+
 ## 3. Get your API keys
 
 1. In Supabase: **Project Settings** → **API**.

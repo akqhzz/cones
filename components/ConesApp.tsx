@@ -730,6 +730,7 @@ export default function ConesApp() {
       song_title: null,
       song_artist: null,
       spotify_track_id: null,
+      sloan: null,
       is_impostor: 0,
       is_analyzed: 0,
       created_at: new Date().toISOString(),

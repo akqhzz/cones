@@ -507,8 +507,12 @@ export default function ConesApp() {
   const [pendingUploadFile, setPendingUploadFile] = useState<File | null>(null);
   const [cropPreviewUrl, setCropPreviewUrl] = useState<string | null>(null);
   const [isCropping, setIsCropping] = useState(false);
-  const [cropOffset, setCropOffset] = useState({ x: 50, y: 50 });
-  const cropDragRef = useRef<{ startX: number; startY: number; baseX: number; baseY: number } | null>(null);
+  const [cropScale, setCropScale] = useState(1);
+  const [cropTranslate, setCropTranslate] = useState({ x: 0, y: 0 });
+  const cropGestureRef = useRef<{
+    startX: number; startY: number; baseTx: number; baseTy: number;
+    pinchStartDist?: number; pinchBaseScale?: number;
+  } | null>(null);
   const cropNaturalRef = useRef<{ w: number; h: number } | null>(null);
   const cropContainerRef = useRef<HTMLDivElement | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -815,7 +819,8 @@ export default function ConesApp() {
     const url = URL.createObjectURL(file);
     setPendingUploadFile(file);
     setCropPreviewUrl(url);
-    setCropOffset({ x: 50, y: 50 });
+    setCropScale(1);
+    setCropTranslate({ x: 0, y: 0 });
     cropNaturalRef.current = null;
     setIsCropping(true);
   };
@@ -883,7 +888,13 @@ export default function ConesApp() {
     }
   }, [sessionId, filter, fetchCones]);
 
-  async function cropImageToSquare(file: File, offsetX = 50, offsetY = 50): Promise<File> {
+  async function cropImageToSquare(
+    file: File,
+    tx = 0,
+    ty = 0,
+    userScale = 1,
+    containerSize = 300,
+  ): Promise<File> {
     const img = document.createElement('img');
     const src = URL.createObjectURL(file);
     img.src = src;
@@ -893,17 +904,22 @@ export default function ConesApp() {
       img.onerror = () => reject(new Error('Image load failed'));
     });
 
-    const side = Math.min(img.width, img.height);
-    const sx = ((offsetX / 100) * (img.width - side));
-    const sy = ((offsetY / 100) * (img.height - side));
+    const baseCoverScale = Math.max(containerSize / img.width, containerSize / img.height);
+    const totalScale = baseCoverScale * userScale;
+    const cropSide = containerSize / totalScale;
+    const centerSrcX = -tx / totalScale + img.width / 2;
+    const centerSrcY = -ty / totalScale + img.height / 2;
+    const srcX = Math.max(0, Math.min(img.width - cropSide, centerSrcX - cropSide / 2));
+    const srcY = Math.max(0, Math.min(img.height - cropSide, centerSrcY - cropSide / 2));
+    const outputSize = Math.round(cropSide);
 
     const canvas = document.createElement('canvas');
-    canvas.width = side;
-    canvas.height = side;
+    canvas.width = outputSize;
+    canvas.height = outputSize;
     const ctx = canvas.getContext('2d');
     if (!ctx) throw new Error('Canvas not supported');
 
-    ctx.drawImage(img, sx, sy, side, side, 0, 0, side, side);
+    ctx.drawImage(img, srcX, srcY, cropSide, cropSide, 0, 0, outputSize, outputSize);
     URL.revokeObjectURL(src);
 
     const blob: Blob = await new Promise((resolve, reject) =>
@@ -914,30 +930,77 @@ export default function ConesApp() {
   }
 
   const handleCropTouchStart = (e: React.TouchEvent) => {
-    const t = e.touches[0];
-    cropDragRef.current = { startX: t.clientX, startY: t.clientY, baseX: cropOffset.x, baseY: cropOffset.y };
+    if (e.touches.length === 1) {
+      const t = e.touches[0];
+      cropGestureRef.current = { startX: t.clientX, startY: t.clientY, baseTx: cropTranslate.x, baseTy: cropTranslate.y };
+    } else if (e.touches.length >= 2) {
+      const t1 = e.touches[0], t2 = e.touches[1];
+      const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+      const midX = (t1.clientX + t2.clientX) / 2;
+      const midY = (t1.clientY + t2.clientY) / 2;
+      cropGestureRef.current = { startX: midX, startY: midY, baseTx: cropTranslate.x, baseTy: cropTranslate.y, pinchStartDist: dist, pinchBaseScale: cropScale };
+    }
   };
 
   const handleCropTouchMove = (e: React.TouchEvent) => {
     e.preventDefault();
-    if (!cropDragRef.current || !cropNaturalRef.current || !cropContainerRef.current) return;
-    const t = e.touches[0];
-    const dx = t.clientX - cropDragRef.current.startX;
-    const dy = t.clientY - cropDragRef.current.startY;
-    const { w, h } = cropNaturalRef.current;
-    const containerSize = cropContainerRef.current.offsetWidth;
-    const scale = Math.max(containerSize / w, containerSize / h);
-    const overflowX = Math.max(0, w * scale - containerSize);
-    const overflowY = Math.max(0, h * scale - containerSize);
-    const newX = overflowX > 0 ? Math.max(0, Math.min(100, cropDragRef.current.baseX - (dx / overflowX) * 100)) : 50;
-    const newY = overflowY > 0 ? Math.max(0, Math.min(100, cropDragRef.current.baseY - (dy / overflowY) * 100)) : 50;
-    setCropOffset({ x: newX, y: newY });
+    const g = cropGestureRef.current;
+    if (!g) return;
+    const containerSize = cropContainerRef.current?.offsetWidth ?? 300;
+    if (e.touches.length === 1 && g.pinchStartDist == null) {
+      const t = e.touches[0];
+      const maxPan = (cropScale - 1) * containerSize / 2;
+      setCropTranslate({
+        x: Math.max(-maxPan, Math.min(maxPan, g.baseTx + t.clientX - g.startX)),
+        y: Math.max(-maxPan, Math.min(maxPan, g.baseTy + t.clientY - g.startY)),
+      });
+    } else if (e.touches.length >= 2 && g.pinchStartDist != null && g.pinchBaseScale != null) {
+      const t1 = e.touches[0], t2 = e.touches[1];
+      const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+      const newScale = Math.max(1, Math.min(5, g.pinchBaseScale * dist / g.pinchStartDist));
+      const midX = (t1.clientX + t2.clientX) / 2;
+      const midY = (t1.clientY + t2.clientY) / 2;
+      const maxPan = (newScale - 1) * containerSize / 2;
+      setCropScale(newScale);
+      setCropTranslate({
+        x: Math.max(-maxPan, Math.min(maxPan, g.baseTx + midX - g.startX)),
+        y: Math.max(-maxPan, Math.min(maxPan, g.baseTy + midY - g.startY)),
+      });
+    }
+  };
+
+  const handleCropWheel = (e: React.WheelEvent) => {
+    e.preventDefault();
+    const containerSize = cropContainerRef.current?.offsetWidth ?? 300;
+    const newScale = Math.max(1, Math.min(5, cropScale * (1 - e.deltaY * 0.001)));
+    const maxPan = (newScale - 1) * containerSize / 2;
+    setCropScale(newScale);
+    setCropTranslate(prev => ({
+      x: Math.max(-maxPan, Math.min(maxPan, prev.x)),
+      y: Math.max(-maxPan, Math.min(maxPan, prev.y)),
+    }));
+  };
+
+  const handleCropMouseDown = (e: React.MouseEvent) => {
+    cropGestureRef.current = { startX: e.clientX, startY: e.clientY, baseTx: cropTranslate.x, baseTy: cropTranslate.y };
+  };
+
+  const handleCropMouseMove = (e: React.MouseEvent) => {
+    if (!cropGestureRef.current || cropGestureRef.current.pinchStartDist != null || !(e.buttons & 1)) return;
+    const g = cropGestureRef.current;
+    const containerSize = cropContainerRef.current?.offsetWidth ?? 300;
+    const maxPan = (cropScale - 1) * containerSize / 2;
+    setCropTranslate({
+      x: Math.max(-maxPan, Math.min(maxPan, g.baseTx + e.clientX - g.startX)),
+      y: Math.max(-maxPan, Math.min(maxPan, g.baseTy + e.clientY - g.startY)),
+    });
   };
 
   const confirmCropAndUpload = async () => {
     if (!pendingUploadFile) return;
     try {
-      const cropped = await cropImageToSquare(pendingUploadFile, cropOffset.x, cropOffset.y);
+      const containerSize = cropContainerRef.current?.offsetWidth ?? 300;
+      const cropped = await cropImageToSquare(pendingUploadFile, cropTranslate.x, cropTranslate.y, cropScale, containerSize);
       if (cropPreviewUrl) URL.revokeObjectURL(cropPreviewUrl);
       setIsCropping(false);
       setCropPreviewUrl(null);
@@ -1022,13 +1085,18 @@ export default function ConesApp() {
             style={{ touchAction: 'none' }}
             onTouchStart={handleCropTouchStart}
             onTouchMove={handleCropTouchMove}
-            onTouchEnd={() => { cropDragRef.current = null; }}
+            onTouchEnd={() => { cropGestureRef.current = null; }}
+            onWheel={handleCropWheel}
+            onMouseDown={handleCropMouseDown}
+            onMouseMove={handleCropMouseMove}
+            onMouseUp={() => { cropGestureRef.current = null; }}
+            onMouseLeave={() => { cropGestureRef.current = null; }}
           >
             <img
               src={cropPreviewUrl}
               alt="Cone preview"
               className="w-full h-full object-cover pointer-events-none select-none"
-              style={{ objectPosition: `${cropOffset.x}% ${cropOffset.y}%` }}
+              style={{ transform: `translate(${cropTranslate.x}px, ${cropTranslate.y}px) scale(${cropScale})`, transformOrigin: 'center center' }}
               onLoad={(e) => {
                 const el = e.currentTarget;
                 cropNaturalRef.current = { w: el.naturalWidth, h: el.naturalHeight };
@@ -1036,7 +1104,7 @@ export default function ConesApp() {
               draggable={false}
             />
           </div>
-          <div className="flex flex-col items-center gap-3 w-full max-w-xs">
+          <div className="flex flex-col items-center gap-6 w-full max-w-xs">
             <button
               type="button"
               onClick={confirmCropAndUpload}

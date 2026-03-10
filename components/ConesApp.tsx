@@ -1105,7 +1105,7 @@ export default function ConesApp() {
       {/* ── Crop overlay (mobile & desktop) ── */}
       {isCropping && cropPreviewUrl && (
         <div
-          className="fixed inset-0 z-50 bg-white flex flex-col items-center justify-center px-6 gap-4"
+          className="fixed inset-0 z-50 bg-white flex flex-col items-center justify-center px-6 gap-4 md:gap-8"
         >
           <p className="text-[10px] uppercase text-gray-600">
             Zoom/Pan to Crop

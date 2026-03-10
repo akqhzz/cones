@@ -969,17 +969,28 @@ export default function ConesApp() {
     }
   };
 
-  const handleCropWheel = (e: React.WheelEvent) => {
-    e.preventDefault();
-    const containerSize = cropContainerRef.current?.offsetWidth ?? 300;
-    const newScale = Math.max(1, Math.min(5, cropScale * (1 - e.deltaY * 0.001)));
-    const maxPan = (newScale - 1) * containerSize / 2;
-    setCropScale(newScale);
-    setCropTranslate(prev => ({
-      x: Math.max(-maxPan, Math.min(maxPan, prev.x)),
-      y: Math.max(-maxPan, Math.min(maxPan, prev.y)),
-    }));
-  };
+  // Non-passive wheel listener so preventDefault() actually works
+  useEffect(() => {
+    if (!isCropping) return;
+    const el = cropContainerRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const containerSize = el.offsetWidth;
+      setCropScale(prev => {
+        const newScale = Math.max(1, Math.min(5, prev * (1 - e.deltaY * 0.001)));
+        const maxPan = (newScale - 1) * containerSize / 2;
+        setCropTranslate(pt => ({
+          x: Math.max(-maxPan, Math.min(maxPan, pt.x)),
+          y: Math.max(-maxPan, Math.min(maxPan, pt.y)),
+        }));
+        return newScale;
+      });
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, [isCropping]);
 
   const handleCropMouseDown = (e: React.MouseEvent) => {
     cropGestureRef.current = { startX: e.clientX, startY: e.clientY, baseTx: cropTranslate.x, baseTy: cropTranslate.y };
@@ -1081,12 +1092,12 @@ export default function ConesApp() {
           </p>
           <div
             ref={cropContainerRef}
-            className="w-full max-w-xs md:max-w-sm aspect-square bg-gray-100 overflow-hidden rounded cursor-grab active:cursor-grabbing"
+            className="w-full max-w-xs md:w-[460px] md:max-w-[460px] aspect-square bg-gray-100 overflow-hidden rounded cursor-grab active:cursor-grabbing"
             style={{ touchAction: 'none' }}
             onTouchStart={handleCropTouchStart}
             onTouchMove={handleCropTouchMove}
             onTouchEnd={() => { cropGestureRef.current = null; }}
-            onWheel={handleCropWheel}
+
             onMouseDown={handleCropMouseDown}
             onMouseMove={handleCropMouseMove}
             onMouseUp={() => { cropGestureRef.current = null; }}

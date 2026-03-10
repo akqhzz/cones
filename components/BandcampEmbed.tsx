@@ -63,7 +63,9 @@ export default function BandcampEmbed({
               left: -2,
               top: -2,
               overflow: 'hidden',
-            }}
+              msOverflowStyle: 'none',
+              scrollbarWidth: 'none',
+            } as React.CSSProperties}
             scrolling="no"
             loading="lazy"
             allow="autoplay"

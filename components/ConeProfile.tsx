@@ -137,7 +137,7 @@ export default function ConeProfile({
         <div className="relative w-full h-full flex flex-col md:h-auto md:max-h-[92vh] md:overflow-y-auto md:border md:border-gray-200">
 
         {/* Scrollable content */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto no-scrollbar">
           {isAnalyzing && !cone?.is_analyzed ? (
             <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
               <div className="analyzing-spinner" />

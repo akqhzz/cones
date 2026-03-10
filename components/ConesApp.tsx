@@ -507,6 +507,10 @@ export default function ConesApp() {
   const [pendingUploadFile, setPendingUploadFile] = useState<File | null>(null);
   const [cropPreviewUrl, setCropPreviewUrl] = useState<string | null>(null);
   const [isCropping, setIsCropping] = useState(false);
+  const [cropOffset, setCropOffset] = useState({ x: 50, y: 50 });
+  const cropDragRef = useRef<{ startX: number; startY: number; baseX: number; baseY: number } | null>(null);
+  const cropNaturalRef = useRef<{ w: number; h: number } | null>(null);
+  const cropContainerRef = useRef<HTMLDivElement | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -811,6 +815,8 @@ export default function ConesApp() {
     const url = URL.createObjectURL(file);
     setPendingUploadFile(file);
     setCropPreviewUrl(url);
+    setCropOffset({ x: 50, y: 50 });
+    cropNaturalRef.current = null;
     setIsCropping(true);
   };
 
@@ -877,7 +883,7 @@ export default function ConesApp() {
     }
   }, [sessionId, filter, fetchCones]);
 
-  async function cropImageToSquare(file: File): Promise<File> {
+  async function cropImageToSquare(file: File, offsetX = 50, offsetY = 50): Promise<File> {
     const img = document.createElement('img');
     const src = URL.createObjectURL(file);
     img.src = src;
@@ -888,8 +894,8 @@ export default function ConesApp() {
     });
 
     const side = Math.min(img.width, img.height);
-    const sx = (img.width - side) / 2;
-    const sy = (img.height - side) / 2;
+    const sx = ((offsetX / 100) * (img.width - side));
+    const sy = ((offsetY / 100) * (img.height - side));
 
     const canvas = document.createElement('canvas');
     canvas.width = side;
@@ -907,10 +913,31 @@ export default function ConesApp() {
     return new File([blob], file.name || 'cone-square.jpg', { type: blob.type });
   }
 
+  const handleCropTouchStart = (e: React.TouchEvent) => {
+    const t = e.touches[0];
+    cropDragRef.current = { startX: t.clientX, startY: t.clientY, baseX: cropOffset.x, baseY: cropOffset.y };
+  };
+
+  const handleCropTouchMove = (e: React.TouchEvent) => {
+    e.preventDefault();
+    if (!cropDragRef.current || !cropNaturalRef.current || !cropContainerRef.current) return;
+    const t = e.touches[0];
+    const dx = t.clientX - cropDragRef.current.startX;
+    const dy = t.clientY - cropDragRef.current.startY;
+    const { w, h } = cropNaturalRef.current;
+    const containerSize = cropContainerRef.current.offsetWidth;
+    const scale = Math.max(containerSize / w, containerSize / h);
+    const overflowX = Math.max(0, w * scale - containerSize);
+    const overflowY = Math.max(0, h * scale - containerSize);
+    const newX = overflowX > 0 ? Math.max(0, Math.min(100, cropDragRef.current.baseX - (dx / overflowX) * 100)) : 50;
+    const newY = overflowY > 0 ? Math.max(0, Math.min(100, cropDragRef.current.baseY - (dy / overflowY) * 100)) : 50;
+    setCropOffset({ x: newX, y: newY });
+  };
+
   const confirmCropAndUpload = async () => {
     if (!pendingUploadFile) return;
     try {
-      const cropped = await cropImageToSquare(pendingUploadFile);
+      const cropped = await cropImageToSquare(pendingUploadFile, cropOffset.x, cropOffset.y);
       if (cropPreviewUrl) URL.revokeObjectURL(cropPreviewUrl);
       setIsCropping(false);
       setCropPreviewUrl(null);
@@ -984,24 +1011,36 @@ export default function ConesApp() {
       {isCropping && cropPreviewUrl && (
         <div
           className="fixed inset-0 z-50 bg-white flex flex-col items-center justify-between py-10 px-6"
-          style={{ touchAction: 'none' }}
         >
           <div />
           <p className="text-[10px] uppercase tracking-[0.14em] text-gray-600">
-            Zoom to Crop Cone
+            Drag to Crop Cone
           </p>
-          <div className="w-full max-w-xs aspect-square bg-gray-100 overflow-hidden rounded">
+          <div
+            ref={cropContainerRef}
+            className="w-full max-w-xs aspect-square bg-gray-100 overflow-hidden rounded cursor-grab active:cursor-grabbing"
+            style={{ touchAction: 'none' }}
+            onTouchStart={handleCropTouchStart}
+            onTouchMove={handleCropTouchMove}
+            onTouchEnd={() => { cropDragRef.current = null; }}
+          >
             <img
               src={cropPreviewUrl}
               alt="Cone preview"
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover pointer-events-none select-none"
+              style={{ objectPosition: `${cropOffset.x}% ${cropOffset.y}%` }}
+              onLoad={(e) => {
+                const el = e.currentTarget;
+                cropNaturalRef.current = { w: el.naturalWidth, h: el.naturalHeight };
+              }}
+              draggable={false}
             />
           </div>
           <div className="flex flex-col items-center gap-3 w-full max-w-xs">
             <button
               type="button"
               onClick={confirmCropAndUpload}
-              className="w-full text-[10px] uppercase bg-black text-white rounded-full py-2 h-9 cursor-pointer"
+              className="w-48 text-[10px] uppercase bg-black text-white rounded-full py-2 h-9 cursor-pointer"
             >
               Start Analyzing
             </button>

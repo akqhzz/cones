@@ -983,6 +983,40 @@ export default function ConesApp() {
 
   return (
     <div className="flex flex-col h-[100dvh] bg-white overflow-hidden">
+      {/* ── Crop overlay (mobile & desktop) ── */}
+      {isCropping && cropPreviewUrl && (
+        <div className="fixed inset-0 z-50 bg-white/95 flex flex-col">
+          <header className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+            <span className="text-[10px] uppercase text-gray-500">Crop Cone</span>
+            <button
+              type="button"
+              onClick={cancelCrop}
+              className="text-[10px] uppercase px-3 py-1 rounded-full border border-gray-300 bg-white cursor-pointer"
+            >
+              Cancel
+            </button>
+          </header>
+          <div className="flex-1 flex items-center justify-center px-6">
+            <div className="w-full max-w-xs aspect-square bg-gray-100 overflow-hidden rounded">
+              <img
+                src={cropPreviewUrl}
+                alt="Cone preview"
+                className="w-full h-full object-cover"
+              />
+            </div>
+          </div>
+          <div className="px-6 pb-6">
+            <button
+              type="button"
+              onClick={confirmCropAndUpload}
+              className="w-full text-[10px] uppercase bg-black text-white rounded-full py-2 h-8 cursor-pointer"
+            >
+              Use Photo
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* ── Desktop top nav ── */}
       <header className="hidden md:flex items-center justify-between px-5 py-2.5">
         <nav className="flex items-center gap-4">

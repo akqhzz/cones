@@ -14,6 +14,8 @@ body {
   font-weight: 400;
   -webkit-font-smoothing: antialiased;
   letter-spacing: 0;
+  overflow: hidden;
+  height: 100%;
 }
 
 * {

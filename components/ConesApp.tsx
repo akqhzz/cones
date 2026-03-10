@@ -902,7 +902,7 @@ export default function ConesApp() {
     : '';
 
   return (
-    <div className="flex flex-col h-screen bg-white overflow-hidden">
+    <div className="flex flex-col h-[100dvh] bg-white overflow-hidden">
       {/* ── Desktop top nav ── */}
       <header className="hidden md:flex items-center justify-between px-5 py-2.5">
         <nav className="flex items-center gap-4">
@@ -1126,7 +1126,7 @@ export default function ConesApp() {
       )}
 
       {/* ── Mobile bottom nav (no border) ── */}
-      <nav className="md:hidden sticky bottom-0 z-30 bg-white flex items-end justify-between px-6 pt-2 pb-[calc(env(safe-area-inset-bottom,0px)+56px)]">
+      <nav className="md:hidden sticky bottom-0 z-30 bg-white flex items-end justify-between px-6 pt-2 pb-[calc(env(safe-area-inset-bottom,0px)+8px)]">
         <div className="flex gap-5 pb-4">
           {(['cones', 'info'] as const).map((tab) => (
             <button

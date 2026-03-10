@@ -714,12 +714,9 @@ export default function ConesApp() {
         e.preventDefault();
       }
     };
-    const handleTouchEnd = (e: TouchEvent) => {
-      if (viewMode !== 'list') return;
-      const delta = e.changedTouches[0].clientX - pageTouchStartX.current;
-      if (delta < -40)
-        setCurrentIndex((i) => Math.min(displayCones.length - 1, i + 1));
-      else if (delta > 40) setCurrentIndex((i) => Math.max(0, i - 1));
+    const handleTouchEnd = (_e: TouchEvent) => {
+      // Let the Carousel component handle swipe gestures on mobile.
+      // We only intercept touchmove to prevent browser back/forward gestures.
     };
 
     el.addEventListener('wheel', handleWheel, { passive: false, capture: true });
@@ -985,33 +982,35 @@ export default function ConesApp() {
     <div className="flex flex-col h-[100dvh] bg-white overflow-hidden">
       {/* ── Crop overlay (mobile & desktop) ── */}
       {isCropping && cropPreviewUrl && (
-        <div className="fixed inset-0 z-50 bg-white/95 flex flex-col">
-          <header className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
-            <span className="text-[10px] uppercase text-gray-500">Crop Cone</span>
-            <button
-              type="button"
-              onClick={cancelCrop}
-              className="text-[10px] uppercase px-3 py-1 rounded-full border border-gray-300 bg-white cursor-pointer"
-            >
-              Cancel
-            </button>
-          </header>
-          <div className="flex-1 flex items-center justify-center px-6">
-            <div className="w-full max-w-xs aspect-square bg-gray-100 overflow-hidden rounded">
-              <img
-                src={cropPreviewUrl}
-                alt="Cone preview"
-                className="w-full h-full object-cover"
-              />
-            </div>
+        <div
+          className="fixed inset-0 z-50 bg-white flex flex-col items-center justify-between py-10 px-6"
+          style={{ touchAction: 'none' }}
+        >
+          <div />
+          <p className="text-[10px] uppercase tracking-[0.14em] text-gray-600">
+            Zoom to Crop Cone
+          </p>
+          <div className="w-full max-w-xs aspect-square bg-gray-100 overflow-hidden rounded">
+            <img
+              src={cropPreviewUrl}
+              alt="Cone preview"
+              className="w-full h-full object-cover"
+            />
           </div>
-          <div className="px-6 pb-6">
+          <div className="flex flex-col items-center gap-3 w-full max-w-xs">
             <button
               type="button"
               onClick={confirmCropAndUpload}
-              className="w-full text-[10px] uppercase bg-black text-white rounded-full py-2 h-8 cursor-pointer"
+              className="w-full text-[10px] uppercase bg-black text-white rounded-full py-2 h-9 cursor-pointer"
             >
-              Use Photo
+              Start Analyzing
+            </button>
+            <button
+              type="button"
+              onClick={cancelCrop}
+              className="text-[10px] uppercase text-gray-500 cursor-pointer"
+            >
+              Cancel
             </button>
           </div>
         </div>

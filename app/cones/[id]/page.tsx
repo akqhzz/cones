@@ -205,6 +205,22 @@ export default function ConePage() {
     if (res.ok) router.push('/');
   };
 
+  // Ensure browser back swipe behaves like tapping CLOSE
+  useEffect(() => {
+    const onPopState = () => {
+      // Mirror the close button behavior
+      router.push(`/${filter === 'mine' ? '?filter=mine' : ''}`);
+    };
+    if (typeof window !== 'undefined') {
+      window.addEventListener('popstate', onPopState);
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('popstate', onPopState);
+      }
+    };
+  }, [router, filter]);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">

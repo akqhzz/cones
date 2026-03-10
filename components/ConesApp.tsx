@@ -1080,7 +1080,7 @@ export default function ConesApp() {
               {displayCones.length > 1 ? (
                 <button
                   onClick={handleShuffle}
-                  className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200 transition-all cursor-pointer"
+                  className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 md:hover:bg-gray-200 transition-all cursor-pointer"
                 >
                   <ShuffleIcon />
                 </button>

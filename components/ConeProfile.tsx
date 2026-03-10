@@ -119,7 +119,7 @@ export default function ConeProfile({
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-white overflow-y-auto md:flex md:items-center md:justify-center md:overflow-hidden"
+      className="fixed inset-0 z-50 bg-white overflow-hidden md:flex md:items-center md:justify-center"
       onClick={(e) => {
         if (typeof window !== 'undefined' && window.innerWidth >= 768 && e.target === e.currentTarget) {
           onClose();
@@ -131,13 +131,13 @@ export default function ConeProfile({
         Desktop: inner is 460px so backdrop receives clicks on the sides; click backdrop to close.
       */}
       <div
-        className="relative w-full flex flex-col min-h-screen md:min-h-0 md:flex md:flex-col md:items-center md:w-[460px]"
+        className="relative w-full h-full flex flex-col md:h-auto md:flex md:flex-col md:items-center md:w-[460px]"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="relative w-full flex flex-col min-h-screen md:min-h-0 md:max-h-[92vh] md:overflow-y-auto md:border md:border-gray-200">
+        <div className="relative w-full h-full flex flex-col md:h-auto md:max-h-[92vh] md:overflow-y-auto md:border md:border-gray-200">
 
         {/* Scrollable content */}
-        <div className="flex-1">
+        <div className="flex-1 overflow-y-auto">
           {isAnalyzing && !cone?.is_analyzed ? (
             <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
               <div className="analyzing-spinner" />
@@ -249,7 +249,7 @@ export default function ConeProfile({
         </div>
 
         {/* Footer — mobile: Prev, Delete, Close, Next */}
-        <div className="sticky bottom-0 bg-white flex items-center justify-center gap-2 py-3 pb-safe md:hidden">
+        <div className="flex-shrink-0 bg-white flex items-center justify-center gap-2 py-3 pb-safe md:hidden">
           <button
             type="button"
             aria-label="Previous cone"

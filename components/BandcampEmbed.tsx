@@ -62,7 +62,9 @@ export default function BandcampEmbed({
               position: 'relative',
               left: -2,
               top: -2,
+              overflow: 'hidden',
             }}
+            scrolling="no"
             loading="lazy"
             allow="autoplay"
             title="Cone's song"

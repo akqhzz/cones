@@ -451,10 +451,10 @@ function IndexView({
   }
 
   return (
-    <div className="flex-1 overflow-y-auto px-4 pt-12 pb-4">
+    <div className="flex-1 overflow-y-auto px-4 pt-8 pb-4">
       <div
-        className="grid gap-x-4 gap-y-12 w-full md:gap-x-32"
-        style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}
+        className="grid gap-x-4 gap-y-8 w-full md:gap-x-32"
+        style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))' }}
       >
         {cones.map((cone, i) => (
           <button
@@ -462,12 +462,12 @@ function IndexView({
             type="button"
             id={scrollToIndex === i ? 'index-view-scroll-target' : undefined}
             onClick={() => onOpenProfile(cone, i)}
-            className="w-full flex items-start gap-3 text-left rounded border border-transparent p-2 pr-0 md:pr-2 md:-m-2"
+            className="w-full flex items-center gap-2 text-left rounded border border-transparent px-0 py-2 md:px-2 md:-m-2"
           >
-            <span className="text-[10px] text-black flex-shrink-0 w-6 leading-tight">
-              ({String(cone.index).padStart(2, '0')})
-            </span>
             <div className="flex-1 min-w-0 space-y-0.5">
+              <p className="text-[10px] text-black leading-tight">
+                ({String(cone.index).padStart(2, '0')})
+              </p>
               <p className="text-[10px] uppercase leading-tight truncate text-black">
                 {cone.description || (cone.is_analyzed ? '—' : 'Analyzing...')}
               </p>
@@ -475,7 +475,7 @@ function IndexView({
                 {formatDate(cone.created_at)}
               </p>
             </div>
-            <div className="w-20 h-20 flex-shrink-0 overflow-hidden bg-gray-100">
+            <div className="w-[56px] h-[56px] flex-shrink-0 overflow-hidden bg-gray-100">
               {cone.image_path && (
                 <img
                   src={cone.image_path}
@@ -929,7 +929,7 @@ export default function ConesApp() {
 
       {/* ── Mobile top filter ── */}
       {activeTab === 'cones' && (
-        <div className="md:hidden flex items-center justify-between gap-2 px-4 pt-3 pb-1">
+        <div className="md:hidden sticky top-0 z-30 flex items-center justify-between gap-2 px-4 pt-3 pb-1 bg-white">
           <FilterPills filter={filter} totalCount={totalCount} mineCount={mineCount} onFilter={setFilter} />
           <div className="inline-flex items-center gap-2 rounded-full">
             <button
@@ -1031,13 +1031,13 @@ export default function ConesApp() {
 
             {/* Shuffle button — desktop: with left/right arrows */}
             <div className="flex justify-center items-center gap-2">
-              {/* Desktop: left arrow */}
+              {/* Arrows + shuffle */}
               <button
                 type="button"
                 aria-label="Previous cone"
                 onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}
                 disabled={displayCones.length <= 1 || currentIndex === 0}
-                className="hidden md:flex w-10 h-10 rounded-full bg-white items-center justify-center text-gray-500 hover:bg-gray-50 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-gray-100"
+                className="flex w-9 h-9 md:w-10 md:h-10 rounded-full bg-white items-center justify-center text-gray-500 md:hover:bg-gray-50 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-gray-100"
               >
                 <LeftArrowIcon />
               </button>
@@ -1051,13 +1051,12 @@ export default function ConesApp() {
               ) : (
                 <div className="w-10 h-10" />
               )}
-              {/* Desktop: right arrow */}
               <button
                 type="button"
                 aria-label="Next cone"
                 onClick={() => setCurrentIndex((i) => Math.min(displayCones.length - 1, i + 1))}
                 disabled={displayCones.length <= 1 || currentIndex === displayCones.length - 1}
-                className="hidden md:flex w-10 h-10 rounded-full bg-white items-center justify-center text-gray-500 hover:bg-gray-50 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-gray-100"
+                className="flex w-9 h-9 md:w-10 md:h-10 rounded-full bg-white items-center justify-center text-gray-500 md:hover:bg-gray-50 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-gray-100"
               >
                 <RightArrowIcon />
               </button>
@@ -1067,7 +1066,7 @@ export default function ConesApp() {
       </main>
 
       {/* ── Mobile bottom nav (no border) ── */}
-      <nav className="md:hidden flex items-end justify-between px-6 pt-2 pb-safe">
+      <nav className="md:hidden sticky bottom-0 z-30 bg-white flex items-end justify-between px-6 pt-2 pb-safe">
         <div className="flex gap-5 pb-3">
           {(['cones', 'info'] as const).map((tab) => (
             <button

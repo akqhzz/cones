@@ -51,7 +51,7 @@ export default function ConeProfile({
     return () => document.removeEventListener('click', handler);
   }, []);
 
-  const navButtonClass = 'text-[9px] bg-white text-black border border-gray-400 rounded-full w-6 h-6 flex items-center justify-center hover:bg-gray-100 transition-colors cursor-pointer leading-none disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white';
+  const navButtonClass = 'text-[10px] bg-white text-black border border-gray-400 rounded-full w-7 h-7 flex items-center justify-center hover:bg-gray-100 transition-colors cursor-pointer leading-none disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white';
 
   const deleteButton = isInMine && cone && !isAnalyzing && onDelete && (
     <>
@@ -225,12 +225,6 @@ export default function ConeProfile({
                       </div>
                     );
                   })}
-                  {cone.sloan && (
-                    <div className="flex justify-between items-center pt-0.5">
-                      <span className="text-[10px]">SLOAN</span>
-                      <span className="text-[10px] font-medium">{cone.sloan}</span>
-                    </div>
-                  )}
                 </div>
               </div>
 
@@ -268,9 +262,12 @@ export default function ConeProfile({
           {deleteButton && <div ref={confirmRef} className="relative">{deleteButton}</div>}
           <button
             onClick={onClose}
-            className="text-[9px] bg-white text-black border border-gray-400 rounded-full pl-2.5 pr-2 py-1.5 h-6 flex items-center gap-2 hover:bg-gray-100 transition-colors uppercase cursor-pointer leading-none"
+            className="text-[10px] bg-white text-black border border-gray-400 rounded-full pl-3 pr-3 py-1.5 h-7 flex items-center gap-2 hover:bg-gray-100 transition-colors uppercase cursor-pointer leading-none"
           >
-            Close <span className="text-[10px] font-medium leading-none inline-flex items-center text-gray-500 -translate-y-0.5">×</span>
+            Close{' '}
+            <span className="text-[11px] font-medium leading-none inline-flex items-center justify-center text-gray-500">
+              ×
+            </span>
           </button>
           <button
             type="button"
@@ -298,9 +295,12 @@ export default function ConeProfile({
           {deleteButton && <div ref={confirmRefDesktop} className="relative">{deleteButton}</div>}
           <button
             onClick={onClose}
-            className="text-[9px] bg-white text-black border border-gray-400 rounded-full pl-4 pr-2 py-1.5 h-6 flex items-center gap-2 hover:bg-gray-100 transition-colors uppercase cursor-pointer leading-none"
+            className="text-[10px] bg-white text-black border border-gray-400 rounded-full pl-4 pr-3 py-1.5 h-7 flex items-center gap-2 hover:bg-gray-100 transition-colors uppercase cursor-pointer leading-none"
           >
-            Close <span className="text-[10px] font-medium leading-none inline-flex items-center text-gray-500 -translate-y-0.5">×</span>
+            Close{' '}
+            <span className="text-[11px] font-medium leading-none inline-flex items-center justify-center text-gray-500">
+              ×
+            </span>
           </button>
           <button
             type="button"

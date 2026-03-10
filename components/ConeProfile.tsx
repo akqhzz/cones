@@ -180,7 +180,13 @@ export default function ConeProfile({
                 </div>
                 <div>
                   <p className="text-[9px] mb-2">Cone&apos;s Song</p>
-                  <BandcampEmbed />
+                  <BandcampEmbed
+                    albumId={cone.bandcamp_album_id}
+                    trackId={cone.bandcamp_track_id}
+                    songUrl={cone.song_url}
+                    songTitle={cone.song_title}
+                    songArtist={cone.song_artist}
+                  />
                 </div>
               </div>
 

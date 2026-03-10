@@ -16,6 +16,9 @@ export interface ConeRow {
   song_title: string | null;
   song_artist: string | null;
   spotify_track_id: string | null;
+  song_url: string | null;
+  bandcamp_album_id: string | null;
+  bandcamp_track_id: string | null;
   sloan: string | null;
   is_impostor: number;
   is_analyzed: number;
@@ -36,7 +39,7 @@ function parseRow(row: ConeRow, index: number): Cone {
 }
 
 const CONES_SELECT =
-  'id, session_id, image_path, description, location, about, openness, conscientiousness, extraversion, agreeableness, neuroticism, core_values, song_title, song_artist, spotify_track_id, sloan, is_impostor, is_analyzed, created_at';
+  'id, session_id, image_path, description, location, about, openness, conscientiousness, extraversion, agreeableness, neuroticism, core_values, song_title, song_artist, spotify_track_id, song_url, bandcamp_album_id, bandcamp_track_id, sloan, is_impostor, is_analyzed, created_at';
 
 export async function getAllCones(): Promise<Cone[]> {
   const { data: rows, error } = await supabase

@@ -969,7 +969,15 @@ export default function ConesApp() {
     }
   };
 
-  // Non-passive wheel listener so preventDefault() actually works
+  // Prevent page zoom while cropping (pinch on mobile, ctrl+scroll on desktop)
+  useEffect(() => {
+    if (!isCropping) return;
+    const noZoom = (e: TouchEvent) => { if (e.touches.length > 1) e.preventDefault(); };
+    document.addEventListener('touchmove', noZoom, { passive: false });
+    return () => document.removeEventListener('touchmove', noZoom);
+  }, [isCropping]);
+
+  // Non-passive wheel listener on crop container so preventDefault() works
   useEffect(() => {
     if (!isCropping) return;
     const el = cropContainerRef.current;
@@ -979,7 +987,7 @@ export default function ConesApp() {
       e.stopPropagation();
       const containerSize = el.offsetWidth;
       setCropScale(prev => {
-        const newScale = Math.max(1, Math.min(5, prev * (1 - e.deltaY * 0.001)));
+        const newScale = Math.max(1, Math.min(5, prev * (1 - e.deltaY * 0.003)));
         const maxPan = (newScale - 1) * containerSize / 2;
         setCropTranslate(pt => ({
           x: Math.max(-maxPan, Math.min(maxPan, pt.x)),
@@ -1092,7 +1100,7 @@ export default function ConesApp() {
           </p>
           <div
             ref={cropContainerRef}
-            className="w-full max-w-xs md:w-[460px] md:max-w-[460px] aspect-square bg-gray-100 overflow-hidden rounded cursor-grab active:cursor-grabbing"
+            className="w-full max-w-xs md:w-[230px] md:max-w-[230px] aspect-square bg-gray-100 overflow-hidden rounded cursor-grab active:cursor-grabbing"
             style={{ touchAction: 'none' }}
             onTouchStart={handleCropTouchStart}
             onTouchMove={handleCropTouchMove}

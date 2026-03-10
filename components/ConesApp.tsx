@@ -977,7 +977,7 @@ export default function ConesApp() {
     return () => document.removeEventListener('touchmove', noZoom);
   }, [isCropping]);
 
-  // Non-passive wheel listener on crop container so preventDefault() works
+  // Non-passive wheel listener: ctrl/pinch = zoom, plain scroll = pan
   useEffect(() => {
     if (!isCropping) return;
     const el = cropContainerRef.current;
@@ -986,15 +986,28 @@ export default function ConesApp() {
       e.preventDefault();
       e.stopPropagation();
       const containerSize = el.offsetWidth;
-      setCropScale(prev => {
-        const newScale = Math.max(1, Math.min(5, prev * (1 - e.deltaY * 0.003)));
-        const maxPan = (newScale - 1) * containerSize / 2;
-        setCropTranslate(pt => ({
-          x: Math.max(-maxPan, Math.min(maxPan, pt.x)),
-          y: Math.max(-maxPan, Math.min(maxPan, pt.y)),
-        }));
-        return newScale;
-      });
+      if (e.ctrlKey) {
+        // Pinch-to-zoom (trackpad) or ctrl+scroll
+        setCropScale(prev => {
+          const newScale = Math.max(1, Math.min(5, prev * (1 - e.deltaY * 0.004)));
+          const maxPan = (newScale - 1) * containerSize / 2;
+          setCropTranslate(pt => ({
+            x: Math.max(-maxPan, Math.min(maxPan, pt.x)),
+            y: Math.max(-maxPan, Math.min(maxPan, pt.y)),
+          }));
+          return newScale;
+        });
+      } else {
+        // Trackpad two-finger scroll = pan
+        setCropScale(prev => {
+          const maxPan = (prev - 1) * containerSize / 2;
+          setCropTranslate(pt => ({
+            x: Math.max(-maxPan, Math.min(maxPan, pt.x - e.deltaX * 0.004 * containerSize)),
+            y: Math.max(-maxPan, Math.min(maxPan, pt.y - e.deltaY * 0.004 * containerSize)),
+          }));
+          return prev;
+        });
+      }
     };
     el.addEventListener('wheel', onWheel, { passive: false });
     return () => el.removeEventListener('wheel', onWheel);
@@ -1092,15 +1105,14 @@ export default function ConesApp() {
       {/* ── Crop overlay (mobile & desktop) ── */}
       {isCropping && cropPreviewUrl && (
         <div
-          className="fixed inset-0 z-50 bg-white flex flex-col items-center justify-between py-10 px-6"
+          className="fixed inset-0 z-50 bg-white flex flex-col items-center justify-center px-6 gap-4"
         >
-          <div />
           <p className="text-[10px] uppercase text-gray-600">
             Zoom/Pan to Crop
           </p>
           <div
             ref={cropContainerRef}
-            className="w-full max-w-xs md:w-[230px] md:max-w-[230px] aspect-square bg-gray-100 overflow-hidden rounded cursor-grab active:cursor-grabbing"
+            className="w-full max-w-xs md:w-[300px] md:max-w-[300px] aspect-square bg-gray-100 overflow-hidden rounded cursor-grab active:cursor-grabbing"
             style={{ touchAction: 'none' }}
             onTouchStart={handleCropTouchStart}
             onTouchMove={handleCropTouchMove}
@@ -1123,7 +1135,7 @@ export default function ConesApp() {
               draggable={false}
             />
           </div>
-          <div className="flex flex-col items-center gap-6 w-full max-w-xs">
+          <div className="flex flex-col items-center gap-3 w-full max-w-xs md:max-w-[300px]">
             <button
               type="button"
               onClick={confirmCropAndUpload}

@@ -504,6 +504,9 @@ export default function ConesApp() {
   const [isUploading, setIsUploading] = useState(false);
   const [analyzingCone, setAnalyzingCone] = useState<Cone | null>(null);
   const [lastUploadedCone, setLastUploadedCone] = useState<Cone | null>(null);
+  const [pendingUploadFile, setPendingUploadFile] = useState<File | null>(null);
+  const [cropPreviewUrl, setCropPreviewUrl] = useState<string | null>(null);
+  const [isCropping, setIsCropping] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -732,10 +735,8 @@ export default function ConesApp() {
     };
   }, [isDesktop, activeTab, viewMode, displayCones.length]);
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !sessionId) return;
-    e.target.value = '';
+  const uploadConeFile = async (file: File) => {
+    if (!sessionId) return;
     setIsUploading(true);
 
     const tempCone: Cone = {
@@ -806,6 +807,16 @@ export default function ConesApp() {
     }
   };
 
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !sessionId) return;
+    e.target.value = '';
+    const url = URL.createObjectURL(file);
+    setPendingUploadFile(file);
+    setCropPreviewUrl(url);
+    setIsCropping(true);
+  };
+
   const handleDelete = async (cone: Cone) => {
     if (!sessionId) {
       router.push('/');
@@ -868,6 +879,63 @@ export default function ConesApp() {
       redoStackRef.current.push(cone);
     }
   }, [sessionId, filter, fetchCones]);
+
+  async function cropImageToSquare(file: File): Promise<File> {
+    const img = document.createElement('img');
+    const src = URL.createObjectURL(file);
+    img.src = src;
+
+    await new Promise<void>((resolve, reject) => {
+      img.onload = () => resolve();
+      img.onerror = () => reject(new Error('Image load failed'));
+    });
+
+    const side = Math.min(img.width, img.height);
+    const sx = (img.width - side) / 2;
+    const sy = (img.height - side) / 2;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = side;
+    canvas.height = side;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Canvas not supported');
+
+    ctx.drawImage(img, sx, sy, side, side, 0, 0, side, side);
+    URL.revokeObjectURL(src);
+
+    const blob: Blob = await new Promise((resolve, reject) =>
+      canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('Canvas toBlob failed'))), file.type || 'image/jpeg')
+    );
+
+    return new File([blob], file.name || 'cone-square.jpg', { type: blob.type });
+  }
+
+  const confirmCropAndUpload = async () => {
+    if (!pendingUploadFile) return;
+    try {
+      const cropped = await cropImageToSquare(pendingUploadFile);
+      if (cropPreviewUrl) URL.revokeObjectURL(cropPreviewUrl);
+      setIsCropping(false);
+      setCropPreviewUrl(null);
+      setPendingUploadFile(null);
+      await uploadConeFile(cropped);
+    } catch {
+      // Fallback: try original file
+      if (cropPreviewUrl) URL.revokeObjectURL(cropPreviewUrl);
+      const original = pendingUploadFile;
+      setIsCropping(false);
+      setCropPreviewUrl(null);
+      setPendingUploadFile(null);
+      await uploadConeFile(original);
+    }
+  };
+
+  const cancelCrop = () => {
+    if (cropPreviewUrl) URL.revokeObjectURL(cropPreviewUrl);
+    setCropPreviewUrl(null);
+    setPendingUploadFile(null);
+    setIsCropping(false);
+  };
 
   useEffect(() => {
     if (!toastMessage) return;

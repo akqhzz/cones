@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import SpotifyEmbed from './SpotifyEmbed';
+import BandcampEmbed from './BandcampEmbed';
 import type { Cone } from '@/lib/db';
 
 interface ConeProfileProps {
@@ -180,15 +180,7 @@ export default function ConeProfile({
                 </div>
                 <div>
                   <p className="text-[9px] mb-2">Cone&apos;s Song</p>
-                  {cone.spotify_track_id != null && String(cone.spotify_track_id).trim() !== '' ? (
-                    <SpotifyEmbed
-                      trackId={cone.spotify_track_id}
-                      trackTitle={cone.song_title ?? undefined}
-                      artistName={cone.song_artist ?? undefined}
-                    />
-                  ) : (
-                    <p className="text-[9px] text-gray-500">No song linked</p>
-                  )}
+                  <BandcampEmbed />
                 </div>
               </div>
 

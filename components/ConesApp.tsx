@@ -704,10 +704,12 @@ export default function ConesApp() {
       pageTouchStartY.current = e.touches[0].clientY;
     };
     const handleTouchMove = (e: TouchEvent) => {
-      if (viewMode !== 'list') return;
       const dx = Math.abs(e.touches[0].clientX - pageTouchStartX.current);
       const dy = Math.abs(e.touches[0].clientY - pageTouchStartY.current);
-      if (dx > dy && dx > 8) e.preventDefault();
+      if (dx > dy && dx > 8) {
+        // Prevent browser back/forward gesture on horizontal swipe in cones tab
+        e.preventDefault();
+      }
     };
     const handleTouchEnd = (e: TouchEvent) => {
       if (viewMode !== 'list') return;

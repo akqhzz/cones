@@ -1126,7 +1126,7 @@ export default function ConesApp() {
       )}
 
       {/* ── Mobile bottom nav (no border) ── */}
-      <nav className="md:hidden sticky bottom-0 z-30 bg-white flex items-end justify-between px-6 pt-2 pb-[calc(env(safe-area-inset-bottom,0px)+32px)]">
+      <nav className="md:hidden sticky bottom-0 z-30 bg-white flex items-end justify-between px-6 pt-2 pb-[calc(env(safe-area-inset-bottom,0px)+56px)]">
         <div className="flex gap-5 pb-4">
           {(['cones', 'info'] as const).map((tab) => (
             <button

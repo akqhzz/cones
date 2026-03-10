@@ -233,7 +233,10 @@ export default function ConePage() {
       cone={cone}
       isOwn={cone.session_id === sessionId}
       isInMine={cone.session_id === sessionId}
-      onClose={() => router.back()}
+      onClose={() => {
+        // Always return directly to main cones view; ConesApp decides list vs index based on sessionStorage
+        router.push(`/${filter === 'mine' ? '?filter=mine' : ''}`);
+      }}
       onDelete={handleDelete}
       onPrevious={
         indexParam && /^\d+$/.test(indexParam) && displayCones

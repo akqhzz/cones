@@ -668,9 +668,9 @@ export default function ConesApp() {
     return () => cancelAnimationFrame(id);
   }, [restoreInstant]);
 
-  // Desktop cones tab: capture horizontal wheel/touch on whole area — move carousel, prevent browser back/forward
+  // Cones tab: capture horizontal wheel/touch on whole area — move carousel, prevent browser back/forward
   useEffect(() => {
-    if (!isDesktop || activeTab !== 'cones') return;
+    if (activeTab !== 'cones') return;
     const el = conesContentRef.current;
     if (!el) return;
 
@@ -678,7 +678,9 @@ export default function ConesApp() {
     const THRESHOLD = 2; // very light horizontal scroll still moves carousel
 
     const handleWheel = (e: WheelEvent) => {
-      const isHorizontal = Math.abs(e.deltaX) >= Math.abs(e.deltaY) || Math.abs(e.deltaX) > 1;
+      if (!isDesktop) return;
+      const isHorizontal =
+        Math.abs(e.deltaX) >= Math.abs(e.deltaY) || Math.abs(e.deltaX) > 1;
       if (!isHorizontal) return;
 
       e.preventDefault();
@@ -691,7 +693,9 @@ export default function ConesApp() {
       if (Math.abs(delta) < THRESHOLD) return;
 
       const dir = delta > 0 ? 1 : -1;
-      setCurrentIndex((i) => Math.min(displayCones.length - 1, Math.max(0, i + dir)));
+      setCurrentIndex((i) =>
+        Math.min(displayCones.length - 1, Math.max(0, i + dir))
+      );
       pageLastSnapTime.current = now;
     };
 
@@ -700,13 +704,16 @@ export default function ConesApp() {
       pageTouchStartY.current = e.touches[0].clientY;
     };
     const handleTouchMove = (e: TouchEvent) => {
+      if (viewMode !== 'list') return;
       const dx = Math.abs(e.touches[0].clientX - pageTouchStartX.current);
       const dy = Math.abs(e.touches[0].clientY - pageTouchStartY.current);
       if (dx > dy && dx > 8) e.preventDefault();
     };
     const handleTouchEnd = (e: TouchEvent) => {
+      if (viewMode !== 'list') return;
       const delta = e.changedTouches[0].clientX - pageTouchStartX.current;
-      if (delta < -40) setCurrentIndex((i) => Math.min(displayCones.length - 1, i + 1));
+      if (delta < -40)
+        setCurrentIndex((i) => Math.min(displayCones.length - 1, i + 1));
       else if (delta > 40) setCurrentIndex((i) => Math.max(0, i - 1));
     };
 
@@ -721,7 +728,7 @@ export default function ConesApp() {
       el.removeEventListener('touchmove', handleTouchMove);
       el.removeEventListener('touchend', handleTouchEnd);
     };
-  }, [isDesktop, activeTab, displayCones.length]);
+  }, [isDesktop, activeTab, viewMode, displayCones.length]);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

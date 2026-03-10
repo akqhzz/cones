@@ -119,7 +119,7 @@ export default function ConeProfile({
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-[#fcfcfc] overflow-y-auto md:flex md:items-center md:justify-center md:overflow-hidden"
+      className="fixed inset-0 z-50 bg-white overflow-y-auto md:flex md:items-center md:justify-center md:overflow-hidden"
       onClick={(e) => {
         if (typeof window !== 'undefined' && window.innerWidth >= 768 && e.target === e.currentTarget) {
           onClose();
@@ -249,7 +249,7 @@ export default function ConeProfile({
         </div>
 
         {/* Footer — mobile: Prev, Delete, Close, Next */}
-        <div className="sticky bottom-0 bg-[#fcfcfc] flex items-center justify-center gap-2 py-3 pb-safe md:hidden">
+        <div className="sticky bottom-0 bg-white flex items-center justify-center gap-2 py-3 pb-safe md:hidden">
           <button
             type="button"
             aria-label="Previous cone"

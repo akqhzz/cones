@@ -170,6 +170,34 @@ export default function ConePage() {
 
   const handleDelete = async () => {
     if (!cone || !sessionId) return;
+    // Compute new center index for carousel after deletion when returning home
+    if (typeof window !== 'undefined' && indexParam && /^\d+$/.test(indexParam) && displayCount != null) {
+      const n = parseInt(indexParam, 10); // 1-based
+      let newIndex0 = 0;
+      if (displayCount > 1) {
+        if (n > 1) {
+          // Prefer previous cone
+          newIndex0 = n - 2;
+        } else {
+          // No previous, use next
+          newIndex0 = 0;
+        }
+      } else {
+        newIndex0 = 0;
+      }
+      window.sessionStorage.setItem('cones_return_index', String(newIndex0));
+      window.sessionStorage.setItem('cones_return_filter', filter);
+    }
+
+    // Store last deleted cone so home page can offer undo toast
+    if (typeof window !== 'undefined') {
+      try {
+        window.sessionStorage.setItem('cones_last_deleted_cone', JSON.stringify(cone));
+      } catch {
+        // ignore
+      }
+    }
+
     const res = await fetch(
       `/api/cones/${cone.id}?session_id=${encodeURIComponent(sessionId)}`,
       { method: 'DELETE' }

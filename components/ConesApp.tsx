@@ -451,7 +451,7 @@ function IndexView({
   }
 
   return (
-    <div className="flex-1 overflow-y-auto px-4 pt-8 pb-4">
+    <div className="flex-1 overflow-y-auto px-4 pt-8 md:pt-16 pb-4">
       <div
         className="grid gap-x-4 gap-y-8 w-full md:gap-x-32"
         style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))' }}
@@ -503,6 +503,8 @@ export default function ConesApp() {
   const [activeTab, setActiveTab] = useState<'cones' | 'info'>('cones');
   const [isUploading, setIsUploading] = useState(false);
   const [analyzingCone, setAnalyzingCone] = useState<Cone | null>(null);
+  const [lastUploadedCone, setLastUploadedCone] = useState<Cone | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const undoStackRef = useRef<Cone[]>([]);
@@ -544,6 +546,19 @@ export default function ConesApp() {
         }
         sessionStorage.removeItem('cones_return_index');
         sessionStorage.removeItem('cones_return_filter');
+      }
+      // If we just deleted a cone in profile view, seed undo stack and show toast
+      const lastDeletedRaw = sessionStorage.getItem('cones_last_deleted_cone');
+      if (lastDeletedRaw) {
+        try {
+          const c = JSON.parse(lastDeletedRaw) as Cone;
+          undoStackRef.current.push(c);
+          setToastMessage('Cone deleted');
+        } catch {
+          // ignore parse error
+        } finally {
+          sessionStorage.removeItem('cones_last_deleted_cone');
+        }
       }
       // Instant carousel: show cached list while fetching
       try {
@@ -734,9 +749,10 @@ export default function ConesApp() {
       is_impostor: 0,
       is_analyzed: 0,
       created_at: new Date().toISOString(),
-      index: 1,
+      index: displayCones.length + 1,
     };
     setAnalyzingCone(tempCone);
+    setLastUploadedCone(tempCone);
 
     const formData = new FormData();
     formData.append('image', file);
@@ -746,19 +762,26 @@ export default function ConesApp() {
       const res = await fetch('/api/upload', { method: 'POST', body: formData });
       const data = await res.json();
       if (data.cone) {
-        setAnalyzingCone(null);
         const list = await fetchCones('mine', sessionId);
         const displayCones = list ? list.filter((c: Cone) => !c.is_impostor) : [];
+        const idx = displayCones.findIndex((c) => c.id === data.cone.id);
+        const indexedCone: Cone = {
+          ...(data.cone as Cone),
+          index: idx >= 0 ? idx + 1 : displayCones.length > 0 ? displayCones.length : 1,
+        };
+        setAnalyzingCone(indexedCone);
+        setLastUploadedCone(indexedCone);
         if (data.cone.is_impostor) {
           setFilter('mine');
           sessionStorage.setItem('cones_profile_key', data.cone.id);
           sessionStorage.setItem('cones_profile_cone', JSON.stringify(data.cone));
           router.push(`/cones/${data.cone.id}?filter=mine`);
         } else if (displayCones.length > 0) {
-          setCurrentIndex(displayCones.length - 1);
-          const urlKey = String(displayCones.length);
+          const arrayIndex = idx >= 0 ? idx : displayCones.length - 1;
+          setCurrentIndex(arrayIndex);
+          const urlKey = String(arrayIndex + 1);
           sessionStorage.setItem('cones_profile_key', urlKey);
-          sessionStorage.setItem('cones_profile_cone', JSON.stringify(displayCones[displayCones.length - 1]));
+          sessionStorage.setItem('cones_profile_cone', JSON.stringify(displayCones[arrayIndex]));
           router.push(`/cones/${urlKey}?filter=mine`);
         }
         setFilter('mine');
@@ -791,6 +814,7 @@ export default function ConesApp() {
   };
 
   const handleUndo = useCallback(async () => {
+    setToastMessage(null);
     const cone = undoStackRef.current.pop();
     if (!cone || !sessionId) return;
     try {
@@ -801,7 +825,11 @@ export default function ConesApp() {
       });
       if (res.ok) {
         redoStackRef.current.push(cone);
-        fetchCones(filter, sessionId);
+        const list = await fetchCones(filter, sessionId);
+        const display = list ? list.filter((c) => !c.is_impostor) : [];
+        const idx = display.findIndex((c) => c.id === cone.id);
+        if (idx >= 0) setCurrentIndex(idx);
+        setToastMessage('Cone restored');
       } else {
         undoStackRef.current.push(cone);
       }
@@ -820,6 +848,7 @@ export default function ConesApp() {
       if (res.ok) {
         undoStackRef.current.push(cone);
         fetchCones(filter, sessionId);
+        setToastMessage('Cone deleted');
       } else {
         redoStackRef.current.push(cone);
       }
@@ -827,6 +856,12 @@ export default function ConesApp() {
       redoStackRef.current.push(cone);
     }
   }, [sessionId, filter, fetchCones]);
+
+  useEffect(() => {
+    if (!toastMessage) return;
+    const t = setTimeout(() => setToastMessage(null), 3000);
+    return () => clearTimeout(t);
+  }, [toastMessage]);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -854,6 +889,7 @@ export default function ConesApp() {
   };
 
   const activeCone = displayCones[currentIndex];
+  const infoCone = lastUploadedCone ?? activeCone;
 
   const formattedActiveDate = activeCone?.created_at
     ? (() => {
@@ -984,16 +1020,16 @@ export default function ConesApp() {
             ref={conesContentRef}
             className="flex-1 flex flex-col justify-evenly py-4 overflow-hidden"
           >
-            {/* Info text */}
-            <div className="flex flex-col items-center text-center px-4 space-y-0 leading-none [&>p]:leading-tight">
-              {activeCone ? (
+            {/* Info text / last uploaded cone (no thumbnail) */}
+            <div className="flex flex-col items-center text-center px-4 space-y-0.5 leading-none [&>p]:leading-tight">
+              {infoCone ? (
                 <>
                   <p className="text-[9px] text-black">
-                    ({String(activeCone.index).padStart(2, '0')})
+                    ({String(infoCone.index).padStart(2, '0')})
                   </p>
                   <p className="text-[10px] uppercase text-center px-4 text-black">
-                    {activeCone.description ||
-                      (activeCone.is_analyzed ? '—' : 'Analyzing...')}
+                    {infoCone.description ||
+                      (infoCone.is_analyzed ? '—' : 'Analyzing...')}
                   </p>
                   {formattedActiveDate && (
                     <p className="text-[10px] uppercase text-black">
@@ -1001,7 +1037,7 @@ export default function ConesApp() {
                     </p>
                   )}
                 </>
-              ) : conesLoading ? null : filter === 'mine' && mineCount === 0 ? null : (
+              ) : conesLoading || displayCones.length === 0 ? null : filter === 'mine' && mineCount === 0 ? null : (
                 <p className="text-[10px] uppercase text-black">
                   Loading...
                 </p>
@@ -1065,9 +1101,33 @@ export default function ConesApp() {
         )}
       </main>
 
+      {/* ── Toast for delete/undo ── */}
+      {toastMessage && (
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-40 rounded-full bg-black text-white text-[10px] px-4 py-2 flex items-center gap-3 shadow-lg">
+          <span>{toastMessage}</span>
+          <button
+            type="button"
+            onClick={() => {
+              handleUndo();
+              setToastMessage(null);
+            }}
+            className="uppercase underline decoration-white/60 text-[10px]"
+          >
+            Undo
+          </button>
+          <button
+            type="button"
+            onClick={() => setToastMessage(null)}
+            className="text-[10px] opacity-70"
+          >
+            ×
+          </button>
+        </div>
+      )}
+
       {/* ── Mobile bottom nav (no border) ── */}
-      <nav className="md:hidden sticky bottom-0 z-30 bg-white flex items-end justify-between px-6 pt-2 pb-safe">
-        <div className="flex gap-5 pb-3">
+      <nav className="md:hidden sticky bottom-0 z-30 bg-white flex items-end justify-between px-6 pt-2 pb-[max(env(safe-area-inset-bottom,0px),16px)]">
+        <div className="flex gap-5 pb-4">
           {(['cones', 'info'] as const).map((tab) => (
             <button
               key={tab}
@@ -1090,7 +1150,7 @@ export default function ConesApp() {
         <button
           onClick={() => fileInputRef.current?.click()}
           disabled={isUploading}
-          className="w-10 h-10 rounded-full bg-black text-white flex items-center justify-center text-lg mb-2 hover:bg-gray-800 transition-colors disabled:opacity-50 shadow-sm cursor-pointer"
+          className="w-10 h-10 rounded-full bg-black text-white flex items-center justify-center text-lg mb-1 hover:bg-gray-800 transition-colors disabled:opacity-50 shadow-sm cursor-pointer"
         >
           +
         </button>

@@ -451,7 +451,7 @@ function IndexView({
   }
 
   return (
-    <div className="flex-1 overflow-y-auto px-4 pt-8 md:pt-16 pb-4">
+    <div className="flex-1 overflow-y-auto px-4 pt-8 md:pt-12 pb-4">
       <div
         className="grid gap-x-4 gap-y-8 w-full md:gap-x-32"
         style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))' }}
@@ -1126,7 +1126,7 @@ export default function ConesApp() {
       )}
 
       {/* ── Mobile bottom nav (no border) ── */}
-      <nav className="md:hidden sticky bottom-0 z-30 bg-white flex items-end justify-between px-6 pt-2 pb-[max(env(safe-area-inset-bottom,0px),16px)]">
+      <nav className="md:hidden sticky bottom-0 z-30 bg-white flex items-end justify-between px-6 pt-2 pb-[calc(env(safe-area-inset-bottom,0px)+32px)]">
         <div className="flex gap-5 pb-4">
           {(['cones', 'info'] as const).map((tab) => (
             <button

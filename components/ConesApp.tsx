@@ -1076,12 +1076,12 @@ export default function ConesApp() {
           className="fixed inset-0 z-50 bg-white flex flex-col items-center justify-between py-10 px-6"
         >
           <div />
-          <p className="text-[10px] uppercase tracking-[0.14em] text-gray-600">
-            Drag to Crop Cone
+          <p className="text-[10px] uppercase text-gray-600">
+            Zoom/Pan to Crop
           </p>
           <div
             ref={cropContainerRef}
-            className="w-full max-w-xs aspect-square bg-gray-100 overflow-hidden rounded cursor-grab active:cursor-grabbing"
+            className="w-full max-w-xs md:max-w-sm aspect-square bg-gray-100 overflow-hidden rounded cursor-grab active:cursor-grabbing"
             style={{ touchAction: 'none' }}
             onTouchStart={handleCropTouchStart}
             onTouchMove={handleCropTouchMove}

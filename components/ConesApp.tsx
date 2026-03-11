@@ -244,6 +244,7 @@ function Carousel({
   return (
     <div
       ref={containerRef}
+      data-carousel-root="1"
       className="relative overflow-hidden select-none w-full touch-pan-y"
       style={{ height: `${containerH}px`, touchAction: 'pan-y' }}
       onTouchStart={onTouchStart}
@@ -884,7 +885,7 @@ export default function ConesApp() {
     const el = conesContentRef.current;
     if (!el) return;
 
-    const SNAP_COOLDOWN = 1000; // one step per gesture no matter how hard/long you scroll
+    const SNAP_COOLDOWN = 350; // shorter cooldown so desktop reacts quickly
     const THRESHOLD = 2; // very light horizontal scroll still moves carousel
 
     const handleWheel = (e: WheelEvent) => {
@@ -926,6 +927,13 @@ export default function ConesApp() {
     const handleTouchEnd = (e: TouchEvent) => {
       if (displayCones.length === 0) return;
       if (e.changedTouches.length === 0) return;
+      // On mobile, let the Carousel component handle swipes that start directly on it
+      if (typeof window !== 'undefined' && window.innerWidth < 768) {
+        const target = e.target as HTMLElement | null;
+        if (target && target.closest('[data-carousel-root=\"1\"]')) {
+          return;
+        }
+      }
       const t = e.changedTouches[0];
       const dx = t.clientX - pageTouchStartX.current;
       const dy = Math.abs(t.clientY - pageTouchStartY.current);

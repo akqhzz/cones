@@ -743,11 +743,13 @@ export default function ConesApp() {
   const uploadConeFile = async (file: File) => {
     if (!sessionId) return;
     setIsUploading(true);
+    setAnalyzingCone(null);
 
+    const blobUrl = URL.createObjectURL(file);
     const tempCone: Cone = {
       id: 'temp',
       session_id: sessionId,
-      image_path: URL.createObjectURL(file),
+      image_path: blobUrl,
       description: null,
       location: null,
       about: null,
@@ -780,6 +782,7 @@ export default function ConesApp() {
       const res = await fetch('/api/upload', { method: 'POST', body: formData });
       const data = await res.json();
       if (data.cone) {
+        URL.revokeObjectURL(blobUrl);
         const list = await fetchCones('mine', sessionId);
         const displayCones = list ? list.filter((c: Cone) => !c.is_impostor) : [];
         const idx = displayCones.findIndex((c) => c.id === data.cone.id);
@@ -798,6 +801,7 @@ export default function ConesApp() {
           const arrayIndex = idx >= 0 ? idx : displayCones.length - 1;
           setCurrentIndex(arrayIndex);
           const urlKey = String(arrayIndex + 1);
+          sessionStorage.setItem('cones_display_list', JSON.stringify(displayCones));
           sessionStorage.setItem('cones_profile_key', urlKey);
           sessionStorage.setItem('cones_profile_cone', JSON.stringify(displayCones[arrayIndex]));
           router.push(`/cones/${urlKey}?filter=mine`);
@@ -805,6 +809,7 @@ export default function ConesApp() {
         setFilter('mine');
       }
     } catch {
+      URL.revokeObjectURL(blobUrl);
       setAnalyzingCone(null);
       alert('Upload failed. Please try again.');
     } finally {
@@ -816,6 +821,7 @@ export default function ConesApp() {
     const file = e.target.files?.[0];
     if (!file || !sessionId) return;
     e.target.value = '';
+    setAnalyzingCone(null);
     const url = URL.createObjectURL(file);
     setPendingUploadFile(file);
     setCropPreviewUrl(url);
@@ -837,6 +843,9 @@ export default function ConesApp() {
       method: 'DELETE',
     });
     if (res.ok) {
+      sessionStorage.removeItem('cones_display_list');
+      sessionStorage.removeItem('cones_profile_key');
+      sessionStorage.removeItem('cones_profile_cone');
       router.push('/');
       fetchCones(filter, sessionId);
     } else {
@@ -1105,14 +1114,14 @@ export default function ConesApp() {
       {/* ── Crop overlay (mobile & desktop) ── */}
       {isCropping && cropPreviewUrl && (
         <div
-          className="fixed inset-0 z-50 bg-white flex flex-col items-center justify-center px-6 gap-4 md:gap-16"
+          className="fixed inset-0 z-50 bg-white flex flex-col items-center justify-center px-6 gap-4 md:gap-24"
         >
           <p className="text-[10px] uppercase text-gray-600">
             Zoom/Pan to Crop
           </p>
           <div
             ref={cropContainerRef}
-            className="w-full max-w-xs md:w-[300px] md:max-w-[300px] aspect-square bg-gray-100 overflow-hidden rounded cursor-grab active:cursor-grabbing"
+            className="w-full max-w-xs md:w-[300px] md:max-w-[300px] aspect-square bg-gray-100 overflow-hidden cursor-grab active:cursor-grabbing"
             style={{ touchAction: 'none' }}
             onTouchStart={handleCropTouchStart}
             onTouchMove={handleCropTouchMove}

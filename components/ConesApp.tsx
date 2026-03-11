@@ -1829,7 +1829,7 @@ export default function ConesApp() {
               className="relative flex flex-col items-center cursor-pointer"
             >
               <span
-                className="text-[10px] uppercase pb-1.5"
+                className="text-[10px] uppercase pb-1.5 select-none"
                 style={{ color: activeTab === tab ? '#000' : '#999' }}
               >
                 {tab}

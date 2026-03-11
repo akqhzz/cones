@@ -548,7 +548,7 @@ function InfoTab() {
           style={{ touchAction: 'none' }}
         />
       </div>
-      <div className="mt-3 flex items-center justify-center gap-4">
+      <div className="mt-3 flex items-center justify-center">
         {/* Color palette */}
         <div className="flex items-center gap-1.5">
           {['#000000', '#f97316', '#22c55e', '#0ea5e9', '#ec4899'].map((c) => (
@@ -564,35 +564,35 @@ function InfoTab() {
             />
           ))}
         </div>
-        {/* Undo / Clear / Redo skeleton (only Clear wired for now) */}
-        <div className="flex items-center gap-2 h-5">
+      </div>
+      {/* Undo / Clear / Redo row (visible only after drawing) */}
+      {hasDrawn && (
+        <div className="mt-2 flex items-center justify-center gap-3 h-5">
           <button
             type="button"
             disabled
-            className="text-[10px] uppercase text-gray-300 cursor-default select-none"
+            className="w-4 h-4 rounded-full border border-gray-300 text-gray-300 flex items-center justify-center cursor-default select-none text-[9px]"
           >
-            Undo
+            ←
           </button>
-          {hasDrawn && (
-            <button
-              type="button"
-              onClick={handleClear}
-              className="text-[10px] uppercase text-gray-400 hover:text-gray-600 cursor-pointer select-none"
-              onMouseDown={(e) => e.preventDefault()}
-              onTouchStart={(e) => e.preventDefault()}
-            >
-              Clear
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={handleClear}
+            className="text-[10px] uppercase text-gray-400 hover:text-gray-600 cursor-pointer select-none"
+            onMouseDown={(e) => e.preventDefault()}
+            onTouchStart={(e) => e.preventDefault()}
+          >
+            Clear
+          </button>
           <button
             type="button"
             disabled
-            className="text-[10px] uppercase text-gray-300 cursor-default select-none"
+            className="w-4 h-4 rounded-full border border-gray-300 text-gray-300 flex items-center justify-center cursor-default select-none text-[9px]"
           >
-            Redo
+            →
           </button>
         </div>
-      </div>
+      )}
     </div>
   );
 }

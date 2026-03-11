@@ -715,10 +715,12 @@ export default function ConesApp() {
     };
 
     const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length !== 1) return;
       pageTouchStartX.current = e.touches[0].clientX;
       pageTouchStartY.current = e.touches[0].clientY;
     };
     const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches.length !== 1) return;
       const dx = Math.abs(e.touches[0].clientX - pageTouchStartX.current);
       const dy = Math.abs(e.touches[0].clientY - pageTouchStartY.current);
       if (dx > dy && dx > 8) {
@@ -726,9 +728,19 @@ export default function ConesApp() {
         e.preventDefault();
       }
     };
-    const handleTouchEnd = (_e: TouchEvent) => {
-      // Let the Carousel component handle swipe gestures on mobile.
-      // We only intercept touchmove to prevent browser back/forward gestures.
+    const handleTouchEnd = (e: TouchEvent) => {
+      if (displayCones.length === 0) return;
+      if (e.changedTouches.length === 0) return;
+      const t = e.changedTouches[0];
+      const dx = t.clientX - pageTouchStartX.current;
+      const dy = Math.abs(t.clientY - pageTouchStartY.current);
+      // Only treat clearly horizontal, long-enough swipes as carousel navigation
+      if (Math.abs(dx) < 40 || Math.abs(dx) <= dy) return;
+      if (dx < 0) {
+        setCurrentIndex((i) => Math.min(displayCones.length - 1, i + 1));
+      } else {
+        setCurrentIndex((i) => Math.max(0, i - 1));
+      }
     };
 
     el.addEventListener('wheel', handleWheel, { passive: false, capture: true });

@@ -84,11 +84,11 @@ export const SONGS_BY_SLOAN: Record<string, SongEntry[]> = {
   ],
   SCUEN: [
     {
-      song_title: '#3',
-      song_artist: 'Aphex Twin',
-      song_url: DEFAULT_SONG_URL,
-      bandcamp_album_id: DEFAULT_BANDCAMP_ALBUM_ID,
-      bandcamp_track_id: DEFAULT_BANDCAMP_TRACK_ID,
+      song_title: 'The Message',
+      song_artist: 'Still Corners',
+      song_url: 'https://open.spotify.com/track/0i5r3EWZsCMYRrpUy8YofZ?si=c1bbe69448d641f9',
+      bandcamp_album_id: '2744019647',
+      bandcamp_track_id: '3488925024',
     },
   ],
   SLOAI: [
@@ -165,11 +165,11 @@ export const SONGS_BY_SLOAN: Record<string, SongEntry[]> = {
   ],
   RCOAI: [
     {
-      song_title: '#3',
-      song_artist: 'Aphex Twin',
-      song_url: DEFAULT_SONG_URL,
-      bandcamp_album_id: DEFAULT_BANDCAMP_ALBUM_ID,
-      bandcamp_track_id: DEFAULT_BANDCAMP_TRACK_ID,
+      song_title: 'Svefn-g-englar',
+      song_artist: 'Sigur Rós',
+      song_url: 'https://open.spotify.com/track/07eGxuz8bL6QMsRqEe1Adu?si=06e152b0b66a42ab',
+      bandcamp_album_id: '3887486471',
+      bandcamp_track_id: '1683135875',
     },
   ],
   RCOAN: [

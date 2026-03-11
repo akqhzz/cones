@@ -411,7 +411,7 @@ function InfoTab() {
     ctx.moveTo(from.x, from.y);
     ctx.lineTo(to.x, to.y);
     ctx.strokeStyle = '#000';
-    ctx.lineWidth = 1;
+    ctx.lineWidth = 3;
     ctx.lineCap = 'round';
     ctx.stroke();
   }, []);
@@ -492,7 +492,7 @@ function InfoTab() {
         const ctx = canvas.getContext('2d');
         if (ctx) {
           ctx.strokeStyle = '#000';
-          ctx.lineWidth = 1;
+          ctx.lineWidth = 3;
           ctx.lineCap = 'round';
         }
         maskDataRef.current = null;
@@ -547,7 +547,9 @@ function InfoTab() {
           <button
             type="button"
             onClick={handleClear}
-            className="text-[10px] uppercase text-gray-500 hover:text-black cursor-pointer"
+            className="text-[10px] uppercase text-gray-400 hover:text-gray-600 cursor-pointer select-none"
+            onMouseDown={(e) => e.preventDefault()}
+            onTouchStart={(e) => e.preventDefault()}
           >
             Clear
           </button>

@@ -961,17 +961,13 @@ export default function ConesApp() {
       img.onerror = () => reject(new Error('Image load failed'));
     });
 
-    const baseContainScale = Math.min(containerSize / img.width, containerSize / img.height);
-    const totalScale = baseContainScale * userScale;
+    const baseCoverScale = Math.max(containerSize / img.width, containerSize / img.height);
+    const totalScale = baseCoverScale * userScale;
     const cropSide = containerSize / totalScale;
-    const offsetX = (containerSize - img.width * baseContainScale) / 2;
-    const offsetY = (containerSize - img.height * baseContainScale) / 2;
-    const localCenterX = containerSize / 2 - tx / userScale;
-    const localCenterY = containerSize / 2 - ty / userScale;
-    const srcCenterX = (localCenterX - offsetX) / baseContainScale;
-    const srcCenterY = (localCenterY - offsetY) / baseContainScale;
-    const srcX = srcCenterX - cropSide / 2;
-    const srcY = srcCenterY - cropSide / 2;
+    const centerSrcX = -tx / totalScale + img.width / 2;
+    const centerSrcY = -ty / totalScale + img.height / 2;
+    const srcX = Math.max(0, Math.min(img.width - cropSide, centerSrcX - cropSide / 2));
+    const srcY = Math.max(0, Math.min(img.height - cropSide, centerSrcY - cropSide / 2));
     const outputSize = Math.round(cropSide);
 
     const canvas = document.createElement('canvas');
@@ -980,19 +976,7 @@ export default function ConesApp() {
     const ctx = canvas.getContext('2d');
     if (!ctx) throw new Error('Canvas not supported');
 
-    // Fill background for letterbox areas (when crop region extends beyond image)
-    ctx.fillStyle = '#f3f4f6';
-    ctx.fillRect(0, 0, outputSize, outputSize);
-    const drawScale = outputSize / cropSide;
-    const clampedSrcX = Math.max(0, srcX);
-    const clampedSrcY = Math.max(0, srcY);
-    const drawSrcW = Math.max(0, Math.min(img.width, srcX + cropSide) - clampedSrcX);
-    const drawSrcH = Math.max(0, Math.min(img.height, srcY + cropSide) - clampedSrcY);
-    if (drawSrcW > 0 && drawSrcH > 0) {
-      ctx.drawImage(img, clampedSrcX, clampedSrcY, drawSrcW, drawSrcH,
-        (clampedSrcX - srcX) * drawScale, (clampedSrcY - srcY) * drawScale,
-        drawSrcW * drawScale, drawSrcH * drawScale);
-    }
+    ctx.drawImage(img, srcX, srcY, cropSide, cropSide, 0, 0, outputSize, outputSize);
     URL.revokeObjectURL(src);
 
     const blob: Blob = await new Promise((resolve, reject) =>
@@ -1003,13 +987,8 @@ export default function ConesApp() {
   }
 
   const getCropMaxPan = (containerSize: number, s: number) => {
-    const nat = cropNaturalRef.current;
-    if (!nat) return { maxPanX: Math.max(0, (s - 1) * containerSize / 2), maxPanY: Math.max(0, (s - 1) * containerSize / 2) };
-    const bc = Math.min(containerSize / nat.w, containerSize / nat.h);
-    return {
-      maxPanX: Math.max(0, (nat.w * bc * s - containerSize) / 2),
-      maxPanY: Math.max(0, (nat.h * bc * s - containerSize) / 2),
-    };
+    const maxPan = (s - 1) * containerSize / 2;
+    return { maxPanX: maxPan, maxPanY: maxPan };
   };
 
   const handleCropTouchStart = (e: React.TouchEvent) => {
@@ -1069,30 +1048,24 @@ export default function ConesApp() {
       e.preventDefault();
       e.stopPropagation();
       const containerSize = el.offsetWidth;
-      const nat = cropNaturalRef.current;
-      const bc = nat ? Math.min(containerSize / nat.w, containerSize / nat.h) : 0;
-      const maxPanForScale = (s: number) => nat ? {
-        maxPanX: Math.max(0, (nat.w * bc * s - containerSize) / 2),
-        maxPanY: Math.max(0, (nat.h * bc * s - containerSize) / 2),
-      } : { maxPanX: 0, maxPanY: 0 };
       if (e.ctrlKey) {
         // Pinch-to-zoom (trackpad) or ctrl+scroll
         setCropScale(prev => {
           const newScale = Math.max(1, Math.min(5, prev * (1 - e.deltaY * 0.004)));
-          const { maxPanX, maxPanY } = maxPanForScale(newScale);
+          const maxPan = (newScale - 1) * containerSize / 2;
           setCropTranslate(pt => ({
-            x: Math.max(-maxPanX, Math.min(maxPanX, pt.x)),
-            y: Math.max(-maxPanY, Math.min(maxPanY, pt.y)),
+            x: Math.max(-maxPan, Math.min(maxPan, pt.x)),
+            y: Math.max(-maxPan, Math.min(maxPan, pt.y)),
           }));
           return newScale;
         });
       } else {
         // Trackpad two-finger scroll = pan
         setCropScale(prev => {
-          const { maxPanX, maxPanY } = maxPanForScale(prev);
+          const maxPan = (prev - 1) * containerSize / 2;
           setCropTranslate(pt => ({
-            x: Math.max(-maxPanX, Math.min(maxPanX, pt.x - e.deltaX * 0.004 * containerSize)),
-            y: Math.max(-maxPanY, Math.min(maxPanY, pt.y - e.deltaY * 0.004 * containerSize)),
+            x: Math.max(-maxPan, Math.min(maxPan, pt.x - e.deltaX * 0.004 * containerSize)),
+            y: Math.max(-maxPan, Math.min(maxPan, pt.y - e.deltaY * 0.004 * containerSize)),
           }));
           return prev;
         });
@@ -1215,7 +1188,7 @@ export default function ConesApp() {
             <img
               src={cropPreviewUrl}
               alt="Cone preview"
-              className="w-full h-full object-contain pointer-events-none select-none"
+              className="w-full h-full object-cover pointer-events-none select-none"
               style={{ transform: `translate(${cropTranslate.x}px, ${cropTranslate.y}px) scale(${cropScale})`, transformOrigin: 'center center' }}
               onLoad={(e) => {
                 const el = e.currentTarget;

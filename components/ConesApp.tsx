@@ -730,6 +730,7 @@ export default function ConesApp() {
   const pageWheelAccumulator = useRef(0);
   const pageLastSnapTime = useRef(0);
   const pageWheelResetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pageSteppedRef = useRef(false);
   const pageTouchStartX = useRef(0);
   const pageTouchStartY = useRef(0);
   const globalTouchStartX = useRef(0);
@@ -896,6 +897,7 @@ export default function ConesApp() {
         Math.abs(e.deltaX) >= Math.abs(e.deltaY) || Math.abs(e.deltaX) > 1;
       if (!isHorizontal) return;
 
+      if (pageSteppedRef.current) return;
       e.preventDefault();
       e.stopPropagation();
 
@@ -910,6 +912,12 @@ export default function ConesApp() {
         Math.min(displayCones.length - 1, Math.max(0, i + dir))
       );
       pageLastSnapTime.current = now;
+      pageSteppedRef.current = true;
+      if (pageWheelResetTimer.current) clearTimeout(pageWheelResetTimer.current);
+      pageWheelResetTimer.current = setTimeout(() => {
+        pageWheelAccumulator.current = 0;
+        pageSteppedRef.current = false;
+      }, 220);
     };
 
     const handleTouchStart = (e: TouchEvent) => {

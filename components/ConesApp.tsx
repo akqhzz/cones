@@ -846,6 +846,8 @@ export default function ConesApp() {
   const pageTouchStartY = useRef(0);
   const globalTouchStartX = useRef(0);
   const globalTouchStartY = useRef(0);
+  const navRepeatTimeoutRef = useRef<number | null>(null);
+  const navRepeatIntervalRef = useRef<number | null>(null);
 
   useEffect(() => {
     let sid = localStorage.getItem('cones_session_id');
@@ -996,9 +998,6 @@ export default function ConesApp() {
   // Cones tab: capture horizontal wheel/touch on whole area — move carousel, prevent browser back/forward
   useEffect(() => {
     if (activeTab !== 'cones') return;
-    const el = conesContentRef.current;
-    if (!el) return;
-
     const SNAP_COOLDOWN = 350; // shorter cooldown so desktop reacts quickly
     const THRESHOLD = 2; // very light horizontal scroll still moves carousel
 
@@ -1032,11 +1031,15 @@ export default function ConesApp() {
     };
 
     const handleTouchStart = (e: TouchEvent) => {
+      const el = conesContentRef.current;
+      if (!el) return;
       if (e.touches.length !== 1) return;
       pageTouchStartX.current = e.touches[0].clientX;
       pageTouchStartY.current = e.touches[0].clientY;
     };
     const handleTouchMove = (e: TouchEvent) => {
+      const el = conesContentRef.current;
+      if (!el) return;
       if (e.touches.length !== 1) return;
       const dx = Math.abs(e.touches[0].clientX - pageTouchStartX.current);
       const dy = Math.abs(e.touches[0].clientY - pageTouchStartY.current);
@@ -1046,6 +1049,8 @@ export default function ConesApp() {
       }
     };
     const handleTouchEnd = (e: TouchEvent) => {
+      const el = conesContentRef.current;
+      if (!el) return;
       if (displayCones.length === 0) return;
       if (e.changedTouches.length === 0) return;
       // On mobile, let the Carousel component handle swipes that start directly on it
@@ -1067,16 +1072,21 @@ export default function ConesApp() {
       }
     };
 
-    el.addEventListener('wheel', handleWheel, { passive: false, capture: true });
-    el.addEventListener('touchstart', handleTouchStart, { passive: true });
-    el.addEventListener('touchmove', handleTouchMove, { passive: false });
-    el.addEventListener('touchend', handleTouchEnd, { passive: true });
+    window.addEventListener('wheel', handleWheel, { passive: false, capture: true });
+    const el = conesContentRef.current;
+    if (el) {
+      el.addEventListener('touchstart', handleTouchStart, { passive: true });
+      el.addEventListener('touchmove', handleTouchMove, { passive: false });
+      el.addEventListener('touchend', handleTouchEnd, { passive: true });
+    }
 
     return () => {
-      el.removeEventListener('wheel', handleWheel, { capture: true });
-      el.removeEventListener('touchstart', handleTouchStart);
-      el.removeEventListener('touchmove', handleTouchMove);
-      el.removeEventListener('touchend', handleTouchEnd);
+      window.removeEventListener('wheel', handleWheel, { capture: true } as any);
+      if (el) {
+        el.removeEventListener('touchstart', handleTouchStart);
+        el.removeEventListener('touchmove', handleTouchMove);
+        el.removeEventListener('touchend', handleTouchEnd);
+      }
     };
   }, [isDesktop, activeTab, viewMode, displayCones.length]);
 
@@ -1473,6 +1483,29 @@ export default function ConesApp() {
     setCurrentIndex(newIdx);
   };
 
+  const startNavRepeat = (dir: -1 | 1) => {
+    if (navRepeatTimeoutRef.current != null || navRepeatIntervalRef.current != null) return;
+    navRepeatTimeoutRef.current = window.setTimeout(() => {
+      navRepeatTimeoutRef.current = null;
+      navRepeatIntervalRef.current = window.setInterval(() => {
+        setCurrentIndex((i) =>
+          dir < 0 ? Math.max(0, i - 1) : Math.min(displayCones.length - 1, i + 1)
+        );
+      }, 120);
+    }, 280);
+  };
+
+  const stopNavRepeat = () => {
+    if (navRepeatTimeoutRef.current != null) {
+      clearTimeout(navRepeatTimeoutRef.current);
+      navRepeatTimeoutRef.current = null;
+    }
+    if (navRepeatIntervalRef.current != null) {
+      clearInterval(navRepeatIntervalRef.current);
+      navRepeatIntervalRef.current = null;
+    }
+  };
+
   const activeCone = displayCones[currentIndex];
   const infoCone = lastUploadedCone ?? activeCone;
 
@@ -1711,6 +1744,18 @@ export default function ConesApp() {
                 onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}
                 disabled={displayCones.length <= 1 || currentIndex === 0}
                 className="flex w-9 h-9 md:w-10 md:h-10 rounded-full bg-white items-center justify-center text-gray-500 md:hover:bg-gray-50 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-gray-100"
+                onMouseDown={(e) => {
+                  if (e.button !== 0) return;
+                  startNavRepeat(-1);
+                }}
+                onMouseUp={stopNavRepeat}
+                onMouseLeave={stopNavRepeat}
+                onTouchStart={(e) => {
+                  e.preventDefault();
+                  startNavRepeat(-1);
+                }}
+                onTouchEnd={stopNavRepeat}
+                onTouchCancel={stopNavRepeat}
               >
                 <LeftArrowIcon />
               </button>
@@ -1730,6 +1775,18 @@ export default function ConesApp() {
                 onClick={() => setCurrentIndex((i) => Math.min(displayCones.length - 1, i + 1))}
                 disabled={displayCones.length <= 1 || currentIndex === displayCones.length - 1}
                 className="flex w-9 h-9 md:w-10 md:h-10 rounded-full bg-white items-center justify-center text-gray-500 md:hover:bg-gray-50 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-gray-100"
+                onMouseDown={(e) => {
+                  if (e.button !== 0) return;
+                  startNavRepeat(1);
+                }}
+                onMouseUp={stopNavRepeat}
+                onMouseLeave={stopNavRepeat}
+                onTouchStart={(e) => {
+                  e.preventDefault();
+                  startNavRepeat(1);
+                }}
+                onTouchEnd={stopNavRepeat}
+                onTouchCancel={stopNavRepeat}
               >
                 <RightArrowIcon />
               </button>

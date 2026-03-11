@@ -137,7 +137,10 @@ async function main() {
         core_values: analysis.core_values ?? [],
         song_title: song.song_title,
         song_artist: song.song_artist,
-        spotify_track_id: song.spotify_track_id,
+        spotify_track_id: null,
+        song_url: song.song_url ?? null,
+        bandcamp_album_id: song.bandcamp_album_id ?? null,
+        bandcamp_track_id: song.bandcamp_track_id ?? null,
         sloan: analysis.sloan ?? null,
         is_impostor: analysis.is_impostor ? 1 : 0,
       });

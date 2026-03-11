@@ -107,6 +107,9 @@ export async function updateConeAnalysis(
     song_title: string | null;
     song_artist: string | null;
     spotify_track_id: string | null;
+    song_url: string | null;
+    bandcamp_album_id: string | null;
+    bandcamp_track_id: string | null;
     sloan: string | null;
     is_impostor: number;
   }
@@ -126,6 +129,9 @@ export async function updateConeAnalysis(
       song_title: data.song_title,
       song_artist: data.song_artist,
       spotify_track_id: data.spotify_track_id,
+      song_url: data.song_url,
+      bandcamp_album_id: data.bandcamp_album_id,
+      bandcamp_track_id: data.bandcamp_track_id,
       sloan: data.sloan,
       is_impostor: data.is_impostor,
       is_analyzed: 1,
@@ -176,6 +182,9 @@ export async function restoreCone(cone: Cone): Promise<void> {
     song_title: cone.song_title,
     song_artist: cone.song_artist,
     spotify_track_id: cone.spotify_track_id,
+    song_url: cone.song_url,
+    bandcamp_album_id: cone.bandcamp_album_id,
+    bandcamp_track_id: cone.bandcamp_track_id,
     sloan: cone.sloan,
     is_impostor: cone.is_impostor,
     is_analyzed: cone.is_analyzed,

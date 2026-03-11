@@ -192,6 +192,10 @@ export default function ConePage() {
     // Store last deleted cone so home page can offer undo toast
     if (typeof window !== 'undefined') {
       try {
+        // Clear any cached display list/profile so we don't show a deleted cone
+        window.sessionStorage.removeItem('cones_display_list');
+        window.sessionStorage.removeItem('cones_profile_key');
+        window.sessionStorage.removeItem('cones_profile_cone');
         window.sessionStorage.setItem('cones_last_deleted_cone', JSON.stringify(cone));
       } catch {
         // ignore

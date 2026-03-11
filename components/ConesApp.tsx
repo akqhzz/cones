@@ -350,6 +350,10 @@ function InfoTab() {
   const [hasDrawn, setHasDrawn] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [strokeColor, setStrokeColor] = useState<string>('#000000');
+  const undoStackRef = useRef<ImageData[]>([]);
+  const redoStackRef = useRef<ImageData[]>([]);
+  const [canUndo, setCanUndo] = useState(false);
+  const [canRedo, setCanRedo] = useState(false);
   const isDrawingRef = useRef(false);
   const lastPointRef = useRef<{ x: number; y: number } | null>(null);
 
@@ -403,6 +407,22 @@ function InfoTab() {
     };
   }, []);
 
+  const snapshotCanvas = useCallback((): ImageData | null => {
+    const canvas = canvasRef.current;
+    if (!canvas) return null;
+    const ctx = canvas.getContext('2d');
+    if (!ctx || canvas.width === 0 || canvas.height === 0) return null;
+    return ctx.getImageData(0, 0, canvas.width, canvas.height);
+  }, []);
+
+  const applyImageData = useCallback((image: ImageData) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.putImageData(image, 0, 0);
+  }, []);
+
   const drawLine = useCallback(
     (from: { x: number; y: number }, to: { x: number; y: number }) => {
       const canvas = canvasRef.current;
@@ -426,10 +446,17 @@ function InfoTab() {
       e.preventDefault();
       const pt = getCanvasPoint(e);
       if (!pt) return;
+      const snap = snapshotCanvas();
+      if (snap) {
+        undoStackRef.current.push(snap);
+        redoStackRef.current = [];
+        setCanUndo(undoStackRef.current.length > 0);
+        setCanRedo(false);
+      }
       isDrawingRef.current = true;
       lastPointRef.current = isOnCone(pt.x, pt.y) ? pt : null;
     },
-    [getCanvasPoint, isOnCone]
+    [getCanvasPoint, isOnCone, snapshotCanvas]
   );
 
   const handlePointerMove = useCallback(
@@ -466,7 +493,41 @@ function InfoTab() {
     const ctx = canvas.getContext('2d');
     if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
     setHasDrawn(false);
+    undoStackRef.current = [];
+    redoStackRef.current = [];
+    setCanUndo(false);
+    setCanRedo(false);
   }, []);
+
+  const handleUndo = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    if (undoStackRef.current.length === 0) return;
+    const current = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const prev = undoStackRef.current.pop() as ImageData;
+    redoStackRef.current.push(current);
+    applyImageData(prev);
+    setCanUndo(undoStackRef.current.length > 0);
+    setCanRedo(redoStackRef.current.length > 0);
+    setHasDrawn(undoStackRef.current.length > 0 || !prev.data.every((v, i) => (i % 4 === 3 ? v === 0 : v === 0)));
+  }, [applyImageData]);
+
+  const handleRedo = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    if (redoStackRef.current.length === 0) return;
+    const current = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const next = redoStackRef.current.pop() as ImageData;
+    undoStackRef.current.push(current);
+    applyImageData(next);
+    setCanUndo(undoStackRef.current.length > 0);
+    setCanRedo(redoStackRef.current.length > 0);
+    setHasDrawn(true);
+  }, [applyImageData]);
 
   // Build mask when image has loaded (and canvas may already be sized)
   useEffect(() => {
@@ -551,7 +612,7 @@ function InfoTab() {
       <div className="mt-3 flex items-center justify-center">
         {/* Color palette */}
         <div className="flex items-center gap-1.5">
-          {['#000000', '#f97316', '#22c55e', '#0ea5e9', '#ec4899'].map((c) => (
+          {['#000000', '#f97316', '#22c55e', '#0ea5e9', '#ffffff'].map((c) => (
             <button
               key={c}
               type="button"
@@ -566,33 +627,47 @@ function InfoTab() {
         </div>
       </div>
       {/* Undo / Clear / Redo row (visible only after drawing) */}
-      {hasDrawn && (
-        <div className="mt-2 flex items-center justify-center gap-3 h-5">
-          <button
-            type="button"
-            disabled
-            className="w-4 h-4 rounded-full border border-gray-300 text-gray-300 flex items-center justify-center cursor-default select-none text-[9px]"
-          >
-            ←
-          </button>
-          <button
-            type="button"
-            onClick={handleClear}
-            className="text-[10px] uppercase text-gray-400 hover:text-gray-600 cursor-pointer select-none"
-            onMouseDown={(e) => e.preventDefault()}
-            onTouchStart={(e) => e.preventDefault()}
-          >
-            Clear
-          </button>
-          <button
-            type="button"
-            disabled
-            className="w-4 h-4 rounded-full border border-gray-300 text-gray-300 flex items-center justify-center cursor-default select-none text-[9px]"
-          >
-            →
-          </button>
-        </div>
-      )}
+      <div className="mt-2 flex items-center justify-center gap-3 h-5">
+        {hasDrawn && (
+          <>
+            <button
+              type="button"
+              onClick={handleUndo}
+              disabled={!canUndo}
+              className="w-4 h-4 rounded-full border flex items-center justify-center select-none text-[9px]"
+              style={{
+                borderColor: canUndo ? '#9ca3af' : '#e5e7eb',
+                color: canUndo ? '#6b7280' : '#d1d5db',
+                cursor: canUndo ? 'pointer' : 'default',
+              }}
+            >
+              ↺
+            </button>
+            <button
+              type="button"
+              onClick={handleClear}
+              className="text-[10px] uppercase text-gray-400 hover:text-gray-600 cursor-pointer select-none"
+              onMouseDown={(e) => e.preventDefault()}
+              onTouchStart={(e) => e.preventDefault()}
+            >
+              Clear
+            </button>
+            <button
+              type="button"
+              onClick={handleRedo}
+              disabled={!canRedo}
+              className="w-4 h-4 rounded-full border flex items-center justify-center select-none text-[9px]"
+              style={{
+                borderColor: canRedo ? '#9ca3af' : '#e5e7eb',
+                color: canRedo ? '#6b7280' : '#d1d5db',
+                cursor: canRedo ? 'pointer' : 'default',
+              }}
+            >
+              ↻
+            </button>
+          </>
+        )}
+      </div>
     </div>
   );
 }

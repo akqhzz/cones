@@ -627,16 +627,15 @@ function InfoTab() {
         </div>
       </div>
       {/* Undo / Clear / Redo row (visible only after drawing) */}
-      <div className="mt-2 flex items-center justify-center gap-3 h-5">
+      <div className="mt-3 flex items-center justify-center gap-5 h-7">
         {hasDrawn && (
           <>
             <button
               type="button"
               onClick={handleUndo}
               disabled={!canUndo}
-              className="w-4 h-4 rounded-full border flex items-center justify-center select-none text-[9px]"
+              className="w-6 h-6 flex items-center justify-center select-none text-[11px]"
               style={{
-                borderColor: canUndo ? '#9ca3af' : '#e5e7eb',
                 color: canUndo ? '#6b7280' : '#d1d5db',
                 cursor: canUndo ? 'pointer' : 'default',
               }}
@@ -656,9 +655,8 @@ function InfoTab() {
               type="button"
               onClick={handleRedo}
               disabled={!canRedo}
-              className="w-4 h-4 rounded-full border flex items-center justify-center select-none text-[9px]"
+              className="w-6 h-6 flex items-center justify-center select-none text-[11px]"
               style={{
-                borderColor: canRedo ? '#9ca3af' : '#e5e7eb',
                 color: canRedo ? '#6b7280' : '#d1d5db',
                 cursor: canRedo ? 'pointer' : 'default',
               }}

@@ -627,7 +627,9 @@ export default function ConesApp() {
       setCones(list);
       setTotalCount(data.total ?? 0);
       setMineCount(data.totalMine ?? 0);
-      if (!skipLoading) {
+      // Only recenter to the middle when we don't already have a specific
+      // return index requested (e.g. after viewing a profile or upload).
+      if (!skipLoading && pendingRestoreIndexRef.current === null) {
         const displayCones = list.filter((c: Cone) => !c.is_impostor);
         setCurrentIndex(
           displayCones.length > 0 ? Math.floor((displayCones.length - 1) / 2) : 0
@@ -1114,7 +1116,7 @@ export default function ConesApp() {
       {/* ── Crop overlay (mobile & desktop) ── */}
       {isCropping && cropPreviewUrl && (
         <div
-          className="fixed inset-0 z-50 bg-white flex flex-col items-center justify-center px-6 gap-4 md:gap-24"
+          className="fixed inset-0 z-50 bg-white flex flex-col items-center justify-center px-6 gap-8 md:gap-24"
         >
           <p className="text-[10px] uppercase text-gray-600">
             Zoom/Pan to Crop

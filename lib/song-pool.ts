@@ -48,8 +48,8 @@ export const SONGS_BY_SLOAN: Record<string, SongEntry[]> = {
   ],
   SCOEN: [
     {
-      song_title: '#3',
-      song_artist: 'Aphex Twin',
+      song_title: 'Esperanza',
+      song_artist: 'Hermanos Gutiérrez',
       song_url: DEFAULT_SONG_URL,
       bandcamp_album_id: DEFAULT_BANDCAMP_ALBUM_ID,
       bandcamp_track_id: DEFAULT_BANDCAMP_TRACK_ID,
@@ -104,9 +104,9 @@ export const SONGS_BY_SLOAN: Record<string, SongEntry[]> = {
     {
       song_title: 'Silhouettes (I, II & III)',
       song_artist: 'Floating Points',
-      song_url: DEFAULT_SONG_URL,
-      bandcamp_album_id: DEFAULT_BANDCAMP_ALBUM_ID,
-      bandcamp_track_id: DEFAULT_BANDCAMP_TRACK_ID,
+      song_url: 'https://open.spotify.com/track/2D4VTAyHTFegKvcw9oRZhX?si=b6058e5a898b4fcc',
+      bandcamp_album_id: '960919289',
+      bandcamp_track_id: '4103986364',
     },
   ],
   SLOEI: [
@@ -183,11 +183,11 @@ export const SONGS_BY_SLOAN: Record<string, SongEntry[]> = {
   ],
   RCOEI: [
     {
-      song_title: '#3',
-      song_artist: 'Aphex Twin',
-      song_url: DEFAULT_SONG_URL,
-      bandcamp_album_id: DEFAULT_BANDCAMP_ALBUM_ID,
-      bandcamp_track_id: DEFAULT_BANDCAMP_TRACK_ID,
+      song_title: 'A Gallant Gentleman',
+      song_artist: 'We Lost The Sea',
+      song_url: 'https://open.spotify.com/track/7MZM9KhwGQG8QJ4BycsnQn?si=b11fe18eb6ce4eb0',
+      bandcamp_album_id: '3408776844',
+      bandcamp_track_id: '1397131464',
     },
   ],
   RCOEN: [

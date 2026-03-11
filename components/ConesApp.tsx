@@ -998,7 +998,7 @@ export default function ConesApp() {
   // Cones tab: capture horizontal wheel/touch on whole area — move carousel, prevent browser back/forward
   useEffect(() => {
     if (activeTab !== 'cones') return;
-    const SNAP_COOLDOWN = 350; // shorter cooldown so desktop reacts quickly
+    const SNAP_COOLDOWN = 800; // gesture reset window; no delay before first step
     const THRESHOLD = 2; // very light horizontal scroll still moves carousel
 
     const handleWheel = (e: WheelEvent) => {
@@ -1007,13 +1007,12 @@ export default function ConesApp() {
         Math.abs(e.deltaX) >= Math.abs(e.deltaY) || Math.abs(e.deltaX) > 1;
       if (!isHorizontal) return;
 
-      if (pageSteppedRef.current) return;
       e.preventDefault();
       e.stopPropagation();
 
-      const now = Date.now();
-      if (now - pageLastSnapTime.current < SNAP_COOLDOWN) return;
+      if (pageSteppedRef.current) return;
 
+      const now = Date.now();
       const delta = Math.abs(e.deltaX) >= Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
       if (Math.abs(delta) < THRESHOLD) return;
 
@@ -1029,7 +1028,7 @@ export default function ConesApp() {
       pageWheelResetTimer.current = setTimeout(() => {
         pageWheelAccumulator.current = 0;
         pageSteppedRef.current = false;
-      }, 800);
+      }, SNAP_COOLDOWN);
     };
 
     const handleTouchStart = (e: TouchEvent) => {
@@ -1522,7 +1521,11 @@ export default function ConesApp() {
     : '';
 
   return (
-    <div className="flex flex-col h-[100dvh] bg-white overflow-hidden">
+    <div
+      className={`flex flex-col h-[100dvh] bg-white overflow-hidden ${
+        activeTab === 'cones' ? 'select-none' : ''
+      }`}
+    >
       {/* ── Crop overlay (mobile & desktop) ── */}
       {isCropping && cropPreviewUrl && (
         <div

@@ -195,7 +195,9 @@ export default function ConeProfile({
 
               {/* About */}
               <div className="grid grid-cols-2 gap-0.5 px-5 py-2.5">
-                <p className="text-[10px] uppercase">About This Cone</p>
+                <p className="text-[10px] uppercase">
+                  {cone.description || 'About This Cone'}
+                </p>
                 <p className="text-[10px] leading-snug">{cone.about}</p>
               </div>
 
@@ -209,7 +211,9 @@ export default function ConeProfile({
               <div className="grid grid-cols-2 gap-0.5 px-5 py-1.5">
                 <div className="flex items-baseline gap-3">
                   <span className="text-[10px] w-6 flex-shrink-0">(01)</span>
-                  <p className="text-[10px] uppercase">Big Five</p>
+                  <p className="text-[10px] uppercase">
+                    Big Five{cone.sloan ? ` - ${cone.sloan}` : ''}
+                  </p>
                 </div>
                 <div className="space-y-1">
                   {BIG_FIVE.map(({ key, label }) => {

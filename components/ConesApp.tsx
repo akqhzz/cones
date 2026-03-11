@@ -26,17 +26,6 @@ function ShuffleIcon() {
   );
 }
 
-// ── Filter Icon SVG ───────────────────────────────────────────────────────────
-function FilterIcon() {
-  return (
-    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-      <line x1="4" y1="6" x2="20" y2="6" />
-      <line x1="8" y1="12" x2="16" y2="12" />
-      <line x1="11" y1="18" x2="13" y2="18" />
-    </svg>
-  );
-}
-
 // ── Carousel nav arrows (desktop) ─────────────────────────────────────────────
 function LeftArrowIcon() {
   return (
@@ -1596,14 +1585,13 @@ export default function ConesApp() {
           ))}
         </nav>
 
-        <div className="flex items-center gap-1.5">
-          <FilterPills filter={filter} totalCount={totalCount} mineCount={mineCount} onFilter={setFilter} />
-          <button className="ml-1 text-gray-400 hover:text-black transition-colors p-1">
-            <FilterIcon />
-          </button>
-        </div>
+        {activeTab === 'cones' && (
+          <div className="flex items-center gap-1.5">
+            <FilterPills filter={filter} totalCount={totalCount} mineCount={mineCount} onFilter={setFilter} />
+          </div>
+        )}
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-8">
           <div className="inline-flex items-center gap-2 rounded-full">
             <button
               type="button"

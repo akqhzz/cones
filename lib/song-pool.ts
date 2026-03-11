@@ -21,20 +21,20 @@ const DEFAULT_BANDCAMP_TRACK_ID = '2156376676';
 export const SONGS_BY_SLOAN: Record<string, SongEntry[]> = {
   SCOAI: [
     {
-      song_title: 'Love Songs on the Radio',
-      song_artist: 'Mojave 3',
-      song_url: DEFAULT_SONG_URL,
-      bandcamp_album_id: DEFAULT_BANDCAMP_ALBUM_ID,
-      bandcamp_track_id: DEFAULT_BANDCAMP_TRACK_ID,
+      song_title: 'Setting Sun',
+      song_artist: "You'll Never Get to Heaven",
+      song_url: 'https://open.spotify.com/track/2D1rYPinUnikGU9xNWylnN?si=c816dc3cc1b34e65',
+      bandcamp_album_id: '3163955389',
+      bandcamp_track_id: '2486194412',
     },
   ],
   SCOAN: [
     {
-      song_title: '#3',
-      song_artist: 'Aphex Twin',
-      song_url: DEFAULT_SONG_URL,
-      bandcamp_album_id: DEFAULT_BANDCAMP_ALBUM_ID,
-      bandcamp_track_id: DEFAULT_BANDCAMP_TRACK_ID,
+      song_title: 'Angels',
+      song_artist: 'Dark Sky',
+      song_url: 'https://open.spotify.com/track/0ZrpYZAJWku0zk4i0WVXUT?si=4380c72e0b3343b4',
+      bandcamp_album_id: '2565034872',
+      bandcamp_track_id: '604283333',
     },
   ],
   SCOEI: [
@@ -66,11 +66,11 @@ export const SONGS_BY_SLOAN: Record<string, SongEntry[]> = {
   ],
   SCUAN: [
     {
-      song_title: '#3',
-      song_artist: 'Aphex Twin',
-      song_url: DEFAULT_SONG_URL,
-      bandcamp_album_id: DEFAULT_BANDCAMP_ALBUM_ID,
-      bandcamp_track_id: DEFAULT_BANDCAMP_TRACK_ID,
+      song_title: 'May Ninth',
+      song_artist: 'Khruangbin',
+      song_url: 'https://open.spotify.com/track/5yVGW2o9LXaiiS4I3HUM3k?si=d3823ec57fb94709',
+      bandcamp_album_id: '1836174753',
+      bandcamp_track_id: '2975778349',
     },
   ],
   SCUEI: [
@@ -111,20 +111,20 @@ export const SONGS_BY_SLOAN: Record<string, SongEntry[]> = {
   ],
   SLOEI: [
     {
-      song_title: '#3',
-      song_artist: 'Aphex Twin',
-      song_url: DEFAULT_SONG_URL,
-      bandcamp_album_id: DEFAULT_BANDCAMP_ALBUM_ID,
-      bandcamp_track_id: DEFAULT_BANDCAMP_TRACK_ID,
+      song_title: 'Train',
+      song_artist: 'Younger Brother',
+      song_url: 'https://open.spotify.com/track/2AACF7qh9u5qWxxLyHhwSd?si=8bbeca00158d427b',
+      bandcamp_album_id: '1471314279',
+      bandcamp_track_id: '1561012384',
     },
   ],
   SLOEN: [
     {
-      song_title: '#3',
-      song_artist: 'Aphex Twin',
-      song_url: DEFAULT_SONG_URL,
-      bandcamp_album_id: DEFAULT_BANDCAMP_ALBUM_ID,
-      bandcamp_track_id: DEFAULT_BANDCAMP_TRACK_ID,
+      song_title: 'Blankenship',
+      song_artist: 'DIIV',
+      song_url: 'https://open.spotify.com/track/2ZKkGDjImEoTafrLyZHjlp?si=f9ca0eec99754344',
+      bandcamp_album_id: '2562883581',
+      bandcamp_track_id: '2967606620',
     },
   ],
   SLUAI: [
@@ -156,11 +156,11 @@ export const SONGS_BY_SLOAN: Record<string, SongEntry[]> = {
   ],
   SLUEN: [
     {
-      song_title: '#3',
-      song_artist: 'Aphex Twin',
-      song_url: DEFAULT_SONG_URL,
-      bandcamp_album_id: DEFAULT_BANDCAMP_ALBUM_ID,
-      bandcamp_track_id: DEFAULT_BANDCAMP_TRACK_ID,
+      song_title: 'Bizancio',
+      song_artist: 'Toundra',
+      song_url: 'https://open.spotify.com/track/2z7PSpbg0pwn6ViCkkh22y?si=3e20334a16ab4a1b',
+      bandcamp_album_id: '1451402688',
+      bandcamp_track_id: '1793783547',
     },
   ],
   RCOAI: [
@@ -246,11 +246,11 @@ export const SONGS_BY_SLOAN: Record<string, SongEntry[]> = {
   ],
   RLOAN: [
     {
-      song_title: '#3',
-      song_artist: 'Aphex Twin',
-      song_url: DEFAULT_SONG_URL,
-      bandcamp_album_id: DEFAULT_BANDCAMP_ALBUM_ID,
-      bandcamp_track_id: DEFAULT_BANDCAMP_TRACK_ID,
+      song_title: 'Free In The Knowledge',
+      song_artist: 'The Smile',
+      song_url: 'https://open.spotify.com/track/0p8esvsm33EFp9iABb8wH9?si=2ef1b4acc04e4984',
+      bandcamp_album_id: '1268189226',
+      bandcamp_track_id: '3341455344',
     },
   ],
   RLOEI: [
@@ -282,11 +282,11 @@ export const SONGS_BY_SLOAN: Record<string, SongEntry[]> = {
   ],
   RLUAN: [
     {
-      song_title: '#3',
-      song_artist: 'Aphex Twin',
-      song_url: DEFAULT_SONG_URL,
-      bandcamp_album_id: DEFAULT_BANDCAMP_ALBUM_ID,
-      bandcamp_track_id: DEFAULT_BANDCAMP_TRACK_ID,
+      song_title: 'Falling Ashes',
+      song_artist: 'Slowdive',
+      song_url: 'https://open.spotify.com/track/4EocLlVV582YshaT7aXZxR?si=c9cbaace6fdb469e',
+      bandcamp_album_id: '2948336751',
+      bandcamp_track_id: '1355050415',
     },
   ],
   RLUEI: [

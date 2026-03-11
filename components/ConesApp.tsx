@@ -211,8 +211,8 @@ function Carousel({
   };
   const onTouchEnd = (e: React.TouchEvent) => {
     const delta = e.changedTouches[0].clientX - touchStartX.current;
-    if (delta < -40 && currentIndex < cones.length - 1) onChange(currentIndex + 1);
-    else if (delta > 40 && currentIndex > 0) onChange(currentIndex - 1);
+    if (delta < -24 && currentIndex < cones.length - 1) onChange(currentIndex + 1);
+    else if (delta > 24 && currentIndex > 0) onChange(currentIndex - 1);
   };
 
   // Mouse drag
@@ -231,8 +231,8 @@ function Carousel({
     isDragging.current = false;
     if (wasDragging.current) {
       const delta = e.clientX - dragStartX.current;
-      if (delta < -40 && currentIndex < cones.length - 1) onChange(currentIndex + 1);
-      else if (delta > 40 && currentIndex > 0) onChange(currentIndex - 1);
+      if (delta < -24 && currentIndex < cones.length - 1) onChange(currentIndex + 1);
+      else if (delta > 24 && currentIndex > 0) onChange(currentIndex - 1);
     }
   };
 
@@ -341,21 +341,216 @@ function Carousel({
 
 // ── Info Tab ──────────────────────────────────────────────────────────────────
 function InfoTab() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const coneImageRef = useRef<HTMLImageElement | null>(null);
+  const maskDataRef = useRef<{ data: Uint8ClampedArray; w: number; h: number } | null>(null);
+  const maskRafRef = useRef<number | null>(null);
+  const [hasDrawn, setHasDrawn] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const isDrawingRef = useRef(false);
+  const lastPointRef = useRef<{ x: number; y: number } | null>(null);
+
+  const buildMask = useCallback(() => {
+    const canvas = canvasRef.current;
+    const img = coneImageRef.current;
+    if (!canvas || !img || !img.complete || !img.naturalWidth || canvas.width === 0 || canvas.height === 0) return;
+    const w = canvas.width;
+    const h = canvas.height;
+    const off = document.createElement('canvas');
+    off.width = w;
+    off.height = h;
+    const ctx = off.getContext('2d');
+    if (!ctx) return;
+    const iw = img.naturalWidth;
+    const ih = img.naturalHeight;
+    const scale = Math.min(w / iw, h / ih);
+    const sw = iw * scale;
+    const sh = ih * scale;
+    const sx = (w - sw) / 2;
+    const sy = (h - sh) / 2;
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, w, h);
+    ctx.drawImage(img, 0, 0, iw, ih, sx, sy, sw, sh);
+    const data = ctx.getImageData(0, 0, w, h).data;
+    maskDataRef.current = { data, w, h };
+  }, []);
+
+  const isOnCone = useCallback((x: number, y: number): boolean => {
+    const mask = maskDataRef.current;
+    if (!mask) return false;
+    const ix = Math.floor(x);
+    const iy = Math.floor(y);
+    if (ix < 0 || ix >= mask.w || iy < 0 || iy >= mask.h) return false;
+    const i = (iy * mask.w + ix) * 4;
+    const r = mask.data[i];
+    const g = mask.data[i + 1];
+    const b = mask.data[i + 2];
+    return r + g + b > 40;
+  }, []);
+
+  const getCanvasPoint = useCallback((e: { clientX: number; clientY: number }) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return null;
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    return {
+      x: (e.clientX - rect.left) * scaleX,
+      y: (e.clientY - rect.top) * scaleY,
+    };
+  }, []);
+
+  const drawLine = useCallback((from: { x: number; y: number }, to: { x: number; y: number }) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.beginPath();
+    ctx.moveTo(from.x, from.y);
+    ctx.lineTo(to.x, to.y);
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 1;
+    ctx.lineCap = 'round';
+    ctx.stroke();
+  }, []);
+
+  const handlePointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      e.preventDefault();
+      const pt = getCanvasPoint(e);
+      if (!pt) return;
+      isDrawingRef.current = true;
+      lastPointRef.current = isOnCone(pt.x, pt.y) ? pt : null;
+    },
+    [getCanvasPoint, isOnCone]
+  );
+
+  const handlePointerMove = useCallback(
+    (e: React.PointerEvent) => {
+      if (!isDrawingRef.current) return;
+      e.preventDefault();
+      const pt = getCanvasPoint(e);
+      if (!pt) return;
+      const onCone = isOnCone(pt.x, pt.y);
+      const last = lastPointRef.current;
+      if (last && onCone) {
+        drawLine(last, pt);
+      }
+      lastPointRef.current = onCone ? pt : null;
+    },
+    [getCanvasPoint, drawLine, isOnCone]
+  );
+
+  const handlePointerUp = useCallback(() => {
+    if (isDrawingRef.current) setHasDrawn(true);
+    isDrawingRef.current = false;
+    lastPointRef.current = null;
+  }, []);
+
+  const handlePointerLeave = useCallback(() => {
+    if (isDrawingRef.current) setHasDrawn(true);
+    isDrawingRef.current = false;
+    lastPointRef.current = null;
+  }, []);
+
+  const handleClear = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+    setHasDrawn(false);
+  }, []);
+
+  // Build mask when image has loaded (and canvas may already be sized)
+  useEffect(() => {
+    if (!imageLoaded) return;
+    if (maskRafRef.current != null) cancelAnimationFrame(maskRafRef.current);
+    maskRafRef.current = requestAnimationFrame(() => {
+      maskRafRef.current = null;
+      buildMask();
+    });
+    return () => {
+      if (maskRafRef.current != null) cancelAnimationFrame(maskRafRef.current);
+    };
+  }, [imageLoaded, buildMask]);
+
+  // Set canvas size to match display; rebuild mask when size changes
+  useEffect(() => {
+    const container = containerRef.current;
+    const canvas = canvasRef.current;
+    if (!container || !canvas) return;
+    const ro = new ResizeObserver(() => {
+      const rect = container.getBoundingClientRect();
+      const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
+      const w = Math.round(rect.width * dpr);
+      const h = Math.round(rect.height * dpr);
+      if (canvas.width !== w || canvas.height !== h) {
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.strokeStyle = '#000';
+          ctx.lineWidth = 1;
+          ctx.lineCap = 'round';
+        }
+        maskDataRef.current = null;
+        if (maskRafRef.current != null) cancelAnimationFrame(maskRafRef.current);
+        maskRafRef.current = requestAnimationFrame(() => {
+          maskRafRef.current = null;
+          buildMask();
+        });
+      }
+    });
+    ro.observe(container);
+    return () => {
+      ro.disconnect();
+      if (maskRafRef.current != null) cancelAnimationFrame(maskRafRef.current);
+    };
+  }, [buildMask]);
+
   return (
-    <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
-      <div className="max-w-xs space-y-5">
-        <p className="text-[9px] uppercase text-gray-400">About</p>
-        <h1 className="text-[11px] font-medium uppercase">Cones</h1>
-        <p className="text-[10px] leading-relaxed text-gray-600">
-          A community archive of traffic cones. Photograph a cone, let AI
-          divine its personality, and add it to the collective.
-        </p>
-        <div className="border-t border-gray-100 pt-5 space-y-2">
-          <p className="text-[9px] text-gray-400">Every cone has a story.</p>
-          <p className="text-[9px] text-gray-400">
-            Every story deserves a song.
-          </p>
-        </div>
+    <div className="flex-1 flex flex-col items-center justify-center p-6">
+      <img
+        ref={coneImageRef}
+        src="/cone-info.png"
+        alt=""
+        className="hidden"
+        crossOrigin="anonymous"
+        onLoad={() => setImageLoaded(true)}
+      />
+      <div
+        ref={containerRef}
+        className="relative w-full max-w-[340px] md:max-w-[520px] aspect-square touch-none select-none mt-10 md:mt-0"
+        style={{ touchAction: 'none' }}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerLeave={handlePointerLeave}
+        onPointerCancel={handlePointerUp}
+      >
+        <img
+          src="/cone-info.png"
+          alt=""
+          className="absolute inset-0 w-full h-full object-contain pointer-events-none"
+          draggable={false}
+        />
+        <canvas
+          ref={canvasRef}
+          className="absolute inset-0 w-full h-full cursor-crosshair"
+          style={{ touchAction: 'none' }}
+        />
+      </div>
+      <div className="mt-4 h-5 flex items-center justify-center">
+        {hasDrawn && (
+          <button
+            type="button"
+            onClick={handleClear}
+            className="text-[10px] uppercase text-gray-500 hover:text-black cursor-pointer"
+          >
+            Clear
+          </button>
+        )}
       </div>
     </div>
   );
@@ -735,7 +930,7 @@ export default function ConesApp() {
       const dx = t.clientX - pageTouchStartX.current;
       const dy = Math.abs(t.clientY - pageTouchStartY.current);
       // Only treat clearly horizontal, long-enough swipes as carousel navigation
-      if (Math.abs(dx) < 40 || Math.abs(dx) <= dy) return;
+      if (Math.abs(dx) < 24 || Math.abs(dx) <= dy) return;
       if (dx < 0) {
         setCurrentIndex((i) => Math.min(displayCones.length - 1, i + 1));
       } else {

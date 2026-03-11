@@ -1024,10 +1024,12 @@ export default function ConesApp() {
       pageLastSnapTime.current = now;
       pageSteppedRef.current = true;
       if (pageWheelResetTimer.current) clearTimeout(pageWheelResetTimer.current);
+      // Treat a hardware swipe as a single gesture: require a long enough
+      // idle period before allowing another step.
       pageWheelResetTimer.current = setTimeout(() => {
         pageWheelAccumulator.current = 0;
         pageSteppedRef.current = false;
-      }, 220);
+      }, 800);
     };
 
     const handleTouchStart = (e: TouchEvent) => {

@@ -534,6 +534,8 @@ export default function ConesApp() {
   const pageWheelResetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pageTouchStartX = useRef(0);
   const pageTouchStartY = useRef(0);
+  const globalTouchStartX = useRef(0);
+  const globalTouchStartY = useRef(0);
 
   useEffect(() => {
     let sid = localStorage.getItem('cones_session_id');
@@ -741,6 +743,38 @@ export default function ConesApp() {
       el.removeEventListener('touchend', handleTouchEnd);
     };
   }, [isDesktop, activeTab, viewMode, displayCones.length]);
+
+  // Mobile: prevent browser back/forward gesture anywhere in cones tab on horizontal swipe
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length !== 1) return;
+      const t = e.touches[0];
+      globalTouchStartX.current = t.clientX;
+      globalTouchStartY.current = t.clientY;
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (activeTab !== 'cones') return;
+      if (window.innerWidth >= 768) return; // desktop already handled
+      if (e.touches.length !== 1) return;
+      const t = e.touches[0];
+      const dx = Math.abs(t.clientX - globalTouchStartX.current);
+      const dy = Math.abs(t.clientY - globalTouchStartY.current);
+      // For clearly horizontal swipes, prevent browser navigation gesture
+      if (dx > dy && dx > 8) {
+        e.preventDefault();
+      }
+    };
+
+    document.addEventListener('touchstart', handleTouchStart, { passive: true });
+    document.addEventListener('touchmove', handleTouchMove, { passive: false });
+    return () => {
+      document.removeEventListener('touchstart', handleTouchStart);
+      document.removeEventListener('touchmove', handleTouchMove);
+    };
+  }, [activeTab]);
 
   const uploadConeFile = async (file: File) => {
     if (!sessionId) return;

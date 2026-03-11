@@ -349,6 +349,7 @@ function InfoTab() {
   const maskRafRef = useRef<number | null>(null);
   const [hasDrawn, setHasDrawn] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [strokeColor, setStrokeColor] = useState<string>('#000000');
   const isDrawingRef = useRef(false);
   const lastPointRef = useRef<{ x: number; y: number } | null>(null);
 
@@ -402,19 +403,23 @@ function InfoTab() {
     };
   }, []);
 
-  const drawLine = useCallback((from: { x: number; y: number }, to: { x: number; y: number }) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    ctx.beginPath();
-    ctx.moveTo(from.x, from.y);
-    ctx.lineTo(to.x, to.y);
-    ctx.strokeStyle = '#000';
-    ctx.lineWidth = 3;
-    ctx.lineCap = 'round';
-    ctx.stroke();
-  }, []);
+  const drawLine = useCallback(
+    (from: { x: number; y: number }, to: { x: number; y: number }) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+      ctx.beginPath();
+      ctx.moveTo(from.x, from.y);
+      ctx.lineTo(to.x, to.y);
+      ctx.strokeStyle = strokeColor;
+      ctx.lineWidth = isMobile ? 4 : 3;
+      ctx.lineCap = 'round';
+      ctx.stroke();
+    },
+    [strokeColor]
+  );
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
@@ -491,8 +496,9 @@ function InfoTab() {
         canvas.height = h;
         const ctx = canvas.getContext('2d');
         if (ctx) {
-          ctx.strokeStyle = '#000';
-          ctx.lineWidth = 3;
+          const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+          ctx.strokeStyle = strokeColor;
+          ctx.lineWidth = isMobile ? 4 : 3;
           ctx.lineCap = 'round';
         }
         maskDataRef.current = null;
@@ -522,7 +528,7 @@ function InfoTab() {
       />
       <div
         ref={containerRef}
-        className="relative w-full max-w-[340px] md:max-w-[520px] aspect-square touch-none select-none mt-10 md:mt-0"
+        className="relative w-full max-w-[380px] md:max-w-[520px] aspect-square touch-none select-none mt-10 md:mt-0"
         style={{ touchAction: 'none' }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
@@ -542,18 +548,50 @@ function InfoTab() {
           style={{ touchAction: 'none' }}
         />
       </div>
-      <div className="mt-4 h-5 flex items-center justify-center">
-        {hasDrawn && (
+      <div className="mt-3 flex items-center justify-center gap-4">
+        {/* Color palette */}
+        <div className="flex items-center gap-1.5">
+          {['#000000', '#f97316', '#22c55e', '#0ea5e9', '#ec4899'].map((c) => (
+            <button
+              key={c}
+              type="button"
+              onClick={() => setStrokeColor(c)}
+              className="w-3.5 h-3.5 rounded-full border cursor-pointer"
+              style={{
+                backgroundColor: c,
+                borderColor: strokeColor === c ? '#111' : '#d4d4d4',
+              }}
+            />
+          ))}
+        </div>
+        {/* Undo / Clear / Redo skeleton (only Clear wired for now) */}
+        <div className="flex items-center gap-2 h-5">
           <button
             type="button"
-            onClick={handleClear}
-            className="text-[10px] uppercase text-gray-400 hover:text-gray-600 cursor-pointer select-none"
-            onMouseDown={(e) => e.preventDefault()}
-            onTouchStart={(e) => e.preventDefault()}
+            disabled
+            className="text-[10px] uppercase text-gray-300 cursor-default select-none"
           >
-            Clear
+            Undo
           </button>
-        )}
+          {hasDrawn && (
+            <button
+              type="button"
+              onClick={handleClear}
+              className="text-[10px] uppercase text-gray-400 hover:text-gray-600 cursor-pointer select-none"
+              onMouseDown={(e) => e.preventDefault()}
+              onTouchStart={(e) => e.preventDefault()}
+            >
+              Clear
+            </button>
+          )}
+          <button
+            type="button"
+            disabled
+            className="text-[10px] uppercase text-gray-300 cursor-default select-none"
+          >
+            Redo
+          </button>
+        </div>
       </div>
     </div>
   );

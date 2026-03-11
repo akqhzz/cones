@@ -8,9 +8,9 @@ Return ONLY a raw JSON object with no markdown, no explanation, just the JSON.
 If it IS a traffic cone:
 {
   "is_impostor": false,
-  "description": "2-3 words that name this cone's archetype",
+  "description": "2-3 words that name this cone's archetype. Use simple words.",
   "about": "4-5 sentences to describe this cone as if this cone were a person with a distinct personality and story, including why it fits its big five personality.
-   Refer it as 'this cone' if there's one cone, or 'These cones' if there are multiple. ",
+   Refer it as 'this cone' if there's one cone, or 'These cones' if there are multiple.",
   "big_five": {
     "openness": 75,
     "conscientiousness": 60,

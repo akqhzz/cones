@@ -999,7 +999,7 @@ export default function ConesApp() {
   useEffect(() => {
     if (activeTab !== 'cones') return;
     const SNAP_COOLDOWN = 800; // gesture reset window; no delay before first step
-    const THRESHOLD = 2; // very light horizontal scroll still moves carousel
+    const THRESHOLD = 0.5; // treat even very light horizontal swipe as intent to move
 
     const handleWheel = (e: WheelEvent) => {
       if (!isDesktop) return;

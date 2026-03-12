@@ -344,6 +344,7 @@ function InfoTab() {
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
   const [cursorOnCone, setCursorOnCone] = useState(false);
+  const [coneSize, setConeSize] = useState<number | null>(null);
   const isDrawingRef = useRef(false);
   const lastPointRef = useRef<{ x: number; y: number } | null>(null);
 
@@ -569,8 +570,50 @@ function InfoTab() {
     };
   }, [buildMask]);
 
+  // Keep cone/canvas/buttons a fixed distance from bottom nav (mobile) or viewport bottom (desktop)
+  useEffect(() => {
+    const updateSize = () => {
+      if (typeof window === 'undefined') return;
+      const container = containerRef.current;
+      if (!container) return;
+      const wrapper = container.parentElement as HTMLElement | null;
+      if (!wrapper) return;
+
+      const wrapperRect = wrapper.getBoundingClientRect();
+      const containerRect = container.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+      const isDesktop = window.innerWidth >= 768;
+
+      let bottomLimit: number;
+      if (isDesktop) {
+        // 40px gap above bottom of viewport
+        bottomLimit = viewportHeight - 40;
+      } else {
+        const bottomNav = document.querySelector<HTMLElement>('nav[data-cones-bottom-nav="1"]');
+        const navRect = bottomNav?.getBoundingClientRect();
+        const navTop = navRect ? navRect.top : viewportHeight;
+        // 20px gap above bottom nav
+        bottomLimit = navTop - 20;
+      }
+
+      const nonConeHeight = wrapperRect.height - containerRect.height;
+      const availableForWrapper = bottomLimit - wrapperRect.top;
+      const availableForCone = availableForWrapper - nonConeHeight;
+      if (availableForCone <= 0) return;
+
+      const maxWidth = wrapper.clientWidth;
+      const idealMax = isDesktop ? 640 : 440;
+      const size = Math.max(0, Math.min(availableForCone, maxWidth, idealMax));
+      setConeSize(size);
+    };
+
+    updateSize();
+    window.addEventListener('resize', updateSize);
+    return () => window.removeEventListener('resize', updateSize);
+  }, []);
+
   return (
-    <div className="flex-1 flex flex-col justify-between md:justify-start px-6 pt-6 pb-5 md:pb-6">
+    <div className="flex-1 flex flex-col px-6 pt-6 pb-5 md:pb-6">
       <img
         ref={coneImageRef}
         src="/cone-info.png"
@@ -599,7 +642,9 @@ function InfoTab() {
             className="relative w-full max-w-[440px] md:max-w-[640px] aspect-square touch-none select-none"
             style={{
               touchAction: 'none',
-              maxHeight: 'calc(100vh - 200px)',
+              width: coneSize ?? undefined,
+              height: coneSize ?? undefined,
+              maxWidth: '100%',
             }}
             onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}
@@ -1850,7 +1895,10 @@ export default function ConesApp() {
       )}
 
       {/* ── Mobile bottom nav (no border) ── */}
-      <nav className="md:hidden sticky bottom-0 z-30 bg-white flex items-end justify-between px-6 pt-2 pb-[calc(env(safe-area-inset-bottom,0px)+8px)]">
+      <nav
+        data-cones-bottom-nav="1"
+        className="md:hidden sticky bottom-0 z-30 bg-white flex items-end justify-between px-6 pt-2 pb-[calc(env(safe-area-inset-bottom,0px)+8px)]"
+      >
         <div className="flex gap-5 pb-4">
           {(['cones', 'info'] as const).map((tab) => (
             <button

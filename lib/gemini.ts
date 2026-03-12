@@ -51,10 +51,10 @@ const safeMime = (m: string): 'image/jpeg' | 'image/png' | 'image/webp' =>
 // 3) gemini-2.5-flash-lite
 // 4) gemini-2.5-flash
 const DEFAULT_GEMINI_MODELS = [
-  'gemini-3.1-flash-lite',
-  'gemini-3.0-flash', // alias; if unavailable this entry will just fail and we fall through
-  //'gemini-2.5-flash-lite',
-  //'gemini-2.5-flash',
+  'gemini-3.1-flash-lite-preview',
+  'gemini-3.0-flash-preview', // alias; if unavailable this entry will just fail and we fall through
+  'gemini-2.5-flash-lite',
+  'gemini-2.5-flash',
 ] as const;
 
 export async function analyzeConeWithGemini(

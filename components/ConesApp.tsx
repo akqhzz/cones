@@ -630,7 +630,7 @@ function InfoTab() {
 
       <div className="w-full max-w-[960px] mx-auto flex flex-col gap-8 md:gap-10">
         {/* Mobile intro text (desktop version lives in top nav) */}
-        <p className="block md:hidden text-[10px] font-medium leading-tight text-gray-800 text-left w-2/3">
+        <p className="block md:hidden text-[10px] font-normal leading-tight text-gray-800 text-left w-2/3">
           I’ve always felt a strange connection to traffic cones. Not for any practical reason,
           just the way they exist. Some stand alone, some gather in groups, some stay put for
           weeks while others appear somewhere new every day. There&apos;s something quietly
@@ -1747,7 +1747,7 @@ export default function ConesApp() {
               <FilterPills filter={filter} totalCount={totalCount} mineCount={mineCount} onFilter={setFilter} />
             </div>
           ) : (
-            <p className="hidden md:block mt-1 font-medium text-[11px] tracking-[-0.02em] leading-snug text-gray-800 text-left max-w-[500px]">
+            <p className="hidden md:block mt-1 text-[11px] tracking-[-0.04em] leading-snug text-gray-800 text-left max-w-[500px]">
               I’ve always felt a strange connection to traffic cones. Not for any practical reason,
               just the way they exist. Some stand alone, some gather in groups, some stay put for
               weeks while others appear somewhere new every day. There&apos;s something quietly

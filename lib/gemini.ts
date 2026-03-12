@@ -33,7 +33,7 @@ If it is NOT a traffic cone:
 {
   "is_impostor": true,
   "description": "IMPOSTOR DETECTED",
-  "about": "Brief humorous note about what this actually is and why it's not welcome in the cone archive",
+  "about": "Brief humorousnote about why it's not welcome in the cone archive. make the language as natural (doesn't sound like AI) as possible. ",
   "big_five": null,
   "sloan": null,
   "core_values": [],

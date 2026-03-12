@@ -678,7 +678,7 @@ function InfoTab() {
                   key={c}
                   type="button"
                   onClick={() => setStrokeColor(c)}
-                  className="w-3.5 h-3.5 rounded-full border cursor-pointer"
+                  className="w-3 h-3 rounded-full border cursor-pointer"
                   style={{
                     backgroundColor: c,
                     borderColor: strokeColor === c ? '#111' : '#d4d4d4',
@@ -689,7 +689,11 @@ function InfoTab() {
               <button
                 type="button"
                 onClick={() => colorInputRef.current?.click()}
-                className="w-3.5 h-3.5 rounded-full cursor-pointer flex items-center justify-center text-[10px] leading-none"
+                onTouchStart={(e) => {
+                  e.preventDefault();
+                  colorInputRef.current?.click();
+                }}
+                className="w-3 h-3 rounded-full cursor-pointer flex items-center justify-center text-[10px] leading-none"
                 style={{
                   border: 'none',
                   backgroundColor: strokeColor === customColor ? customColor : 'transparent',

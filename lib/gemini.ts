@@ -8,8 +8,8 @@ Return ONLY a raw JSON object with no markdown, no explanation, just the JSON.
 If it IS a traffic cone:
 {
   "is_impostor": false,
-  "description": "2-3 words that name this cone's archetype. Use simple words. start with 'The'",
-  "about": "2-3 sentences in total. describe this cone as if this cone were a person with a distinct personality and story, including why it fits its big five personality.
+  "description": "2-3 words that name this cone's archetype. Use simple words. Try start with 'The', try not to use 'Guardian'",
+  "about": "2-3 sentences in total. describe this cone as if this cone were a person with a distinct personality and story (mention its special charcaterics/interaction with the environment), including why it fits its big five personality.
    Refer it as 'this cone' if therfore's one cone, or 'These cones' if there are multiple. make the language as natural (doesn't sound like AI) as possible. Make it a bit humorous.",
   "big_five": {
     "openness": 75,
@@ -53,8 +53,8 @@ const safeMime = (m: string): 'image/jpeg' | 'image/png' | 'image/webp' =>
 const DEFAULT_GEMINI_MODELS = [
   'gemini-3.1-flash-lite',
   'gemini-3.0-flash', // alias; if unavailable this entry will just fail and we fall through
-  'gemini-2.5-flash-lite',
-  'gemini-2.5-flash',
+  //'gemini-2.5-flash-lite',
+  //'gemini-2.5-flash',
 ] as const;
 
 export async function analyzeConeWithGemini(

@@ -570,7 +570,7 @@ function InfoTab() {
   }, [buildMask]);
 
   return (
-    <div className="flex-1 flex flex-col px-6 pt-6 pb-6">
+    <div className="flex-1 flex flex-col justify-between md:justify-start px-6 pt-6 pb-5 md:pb-6">
       <img
         ref={coneImageRef}
         src="/cone-info.png"
@@ -593,11 +593,14 @@ function InfoTab() {
           a song that matches its vibe. Every cone has a story.
         </p>
 
-        <div className="flex flex-col items-center gap-4 md:gap-5 mt-32 md:mt-16">
+        <div className="flex flex-col items-center gap-4 md:gap-5 mt-8 md:mt-16 mb-5 md:mb-0">
           <div
             ref={containerRef}
             className="relative w-full max-w-[440px] md:max-w-[640px] aspect-square touch-none select-none"
-            style={{ touchAction: 'none' }}
+            style={{
+              touchAction: 'none',
+              maxHeight: 'calc(100vh - 200px)',
+            }}
             onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp}

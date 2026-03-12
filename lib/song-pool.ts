@@ -39,20 +39,20 @@ export const SONGS_BY_SLOAN: Record<string, SongEntry[]> = {
   ],
   SCOEI: [
     {
-      song_title: '#3',
-      song_artist: 'Aphex Twin',
-      song_url: DEFAULT_SONG_URL,
-      bandcamp_album_id: DEFAULT_BANDCAMP_ALBUM_ID,
-      bandcamp_track_id: DEFAULT_BANDCAMP_TRACK_ID,
+      song_title: 'The Sun In A Box',
+      song_artist: 'Max Cooper',
+      song_url: 'https://open.spotify.com/track/7MlkDsu20cng48iJDHAIdu?si=aa987872a3264903',
+      bandcamp_album_id: '3375445042',
+      bandcamp_track_id: '1667357508',
     },
   ],
   SCOEN: [
     {
-      song_title: 'Esperanza',
-      song_artist: 'Hermanos Gutiérrez',
-      song_url: DEFAULT_SONG_URL,
-      bandcamp_album_id: DEFAULT_BANDCAMP_ALBUM_ID,
-      bandcamp_track_id: DEFAULT_BANDCAMP_TRACK_ID,
+      song_title: 'Mariella',
+      song_artist: 'Khruangbin',
+      song_url: 'https://open.spotify.com/track/3dvXRk7TZ929m21p49RR5P?si=98a0dc2f820e482d',
+      bandcamp_album_id: '3372930174',
+      bandcamp_track_id: '3697806764',
     },
   ],
   SCUAI: [
@@ -75,11 +75,11 @@ export const SONGS_BY_SLOAN: Record<string, SongEntry[]> = {
   ],
   SCUEI: [
     {
-      song_title: '#3',
-      song_artist: 'Aphex Twin',
-      song_url: DEFAULT_SONG_URL,
-      bandcamp_album_id: DEFAULT_BANDCAMP_ALBUM_ID,
-      bandcamp_track_id: DEFAULT_BANDCAMP_TRACK_ID,
+      song_title: 'DRIFTIN',
+      song_artist: 'cero',
+      song_url: 'https://open.spotify.com/track/4IwsUSXKvMQaASN57Lx9YA?si=3b4c255e16454a80',
+      bandcamp_album_id: '919794862',
+      bandcamp_track_id: '3258722672',
     },
   ],
   SCUEN: [
@@ -129,11 +129,11 @@ export const SONGS_BY_SLOAN: Record<string, SongEntry[]> = {
   ],
   SLUAI: [
     {
-      song_title: '#3',
-      song_artist: 'Aphex Twin',
-      song_url: DEFAULT_SONG_URL,
-      bandcamp_album_id: DEFAULT_BANDCAMP_ALBUM_ID,
-      bandcamp_track_id: DEFAULT_BANDCAMP_TRACK_ID,
+      song_title: 'LONELINESS WILL SHINE',
+      song_artist: 'toe',
+      song_url: 'https://open.spotify.com/track/3Vz7rPtKueXG50yCFOwYOw?si=04ee9073e4084341',
+      bandcamp_album_id: '2491042928',
+      bandcamp_track_id: '1817555552',
     },
   ],
   SLUAN: [
@@ -201,38 +201,38 @@ export const SONGS_BY_SLOAN: Record<string, SongEntry[]> = {
   ],
   RCUAI: [
     {
-      song_title: '#3',
-      song_artist: 'Aphex Twin',
-      song_url: DEFAULT_SONG_URL,
-      bandcamp_album_id: DEFAULT_BANDCAMP_ALBUM_ID,
-      bandcamp_track_id: DEFAULT_BANDCAMP_TRACK_ID,
+      song_title: 'Kettering',
+      song_artist: 'The Antlers',
+      song_url: 'https://open.spotify.com/track/453spNn4mGdYErYt3rGhSX?si=75bfe6188a5d4083',
+      bandcamp_album_id: '1914003110',
+      bandcamp_track_id: '50036698',
     },
   ],
   RCUAN: [
     {
-      song_title: '#3',
-      song_artist: 'Aphex Twin',
-      song_url: DEFAULT_SONG_URL,
-      bandcamp_album_id: DEFAULT_BANDCAMP_ALBUM_ID,
-      bandcamp_track_id: DEFAULT_BANDCAMP_TRACK_ID,
+      song_title: 'Loro',
+      song_artist: 'Pinback',
+      song_url: 'https://open.spotify.com/track/05jpJBvKKsOpFGqw1uDnZ7?si=42e5d53b9c5f4d4d',
+      bandcamp_album_id: '3421850132',
+      bandcamp_track_id: '2970761491',
     },
   ],
   RCUEI: [
     {
-      song_title: '#3',
-      song_artist: 'Aphex Twin',
-      song_url: DEFAULT_SONG_URL,
-      bandcamp_album_id: DEFAULT_BANDCAMP_ALBUM_ID,
-      bandcamp_track_id: DEFAULT_BANDCAMP_TRACK_ID,
+      song_title: 'A Tune For Us',
+      song_artist: 'DjRUM',
+      song_url: 'https://open.spotify.com/track/41Y0ch6R3jzpJOZv6nhf9Z?si=c24f6101267e48c8',
+      bandcamp_album_id: '2022816946',
+      bandcamp_track_id: '2778319625',
     },
   ],
   RCUEN: [
     {
-      song_title: '#3',
-      song_artist: 'Aphex Twin',
-      song_url: DEFAULT_SONG_URL,
-      bandcamp_album_id: DEFAULT_BANDCAMP_ALBUM_ID,
-      bandcamp_track_id: DEFAULT_BANDCAMP_TRACK_ID,
+      song_title: 'Rioseco',
+      song_artist: 'Caspian',
+      song_url: 'https://open.spotify.com/track/42wOySSV3mE3lSo12wKbmL?si=3ab84183884f488d',
+      bandcamp_album_id: '801960894',
+      bandcamp_track_id: '1914289141',
     },
   ],
   RLOAI: [
@@ -264,11 +264,11 @@ export const SONGS_BY_SLOAN: Record<string, SongEntry[]> = {
   ],
   RLOEN: [
     {
-      song_title: 'The Beginning of the End',
-      song_artist: 'Headache',
-      song_url: DEFAULT_SONG_URL,
-      bandcamp_album_id: DEFAULT_BANDCAMP_ALBUM_ID,
-      bandcamp_track_id: DEFAULT_BANDCAMP_TRACK_ID,
+      song_title: 'Levo',
+      song_artist: 'Recondite',
+      song_url: 'https://open.spotify.com/track/1Xgg0bhjK57PJ6WLYOi3oY?si=83a8caa39de44a3b',
+      bandcamp_album_id: '1743284557',
+      bandcamp_track_id: '1757747814',
     },
   ],
   RLUAI: [
@@ -300,11 +300,11 @@ export const SONGS_BY_SLOAN: Record<string, SongEntry[]> = {
   ],
   RLUEN: [
     {
-      song_title: '#3',
-      song_artist: 'Aphex Twin',
-      song_url: DEFAULT_SONG_URL,
-      bandcamp_album_id: DEFAULT_BANDCAMP_ALBUM_ID,
-      bandcamp_track_id: DEFAULT_BANDCAMP_TRACK_ID,
+      song_title: 'These Chains',
+      song_artist: 'Mid-Air Thief',
+      song_url: 'https://open.spotify.com/track/15X2S6zycG5gc9ja86361z?si=bd4edb4ee2d74760',
+      bandcamp_album_id: '303635167',
+      bandcamp_track_id: '431797831',
     },
   ],
 };

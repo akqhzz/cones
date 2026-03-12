@@ -343,6 +343,7 @@ function InfoTab() {
   const redoStackRef = useRef<ImageData[]>([]);
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
+  const [cursorOnCone, setCursorOnCone] = useState(false);
   const isDrawingRef = useRef(false);
   const lastPointRef = useRef<{ x: number; y: number } | null>(null);
 
@@ -450,9 +451,10 @@ function InfoTab() {
 
   const handlePointerMove = useCallback(
     (e: React.PointerEvent) => {
+      const pt = getCanvasPoint(e);
+      if (pt) setCursorOnCone(isOnCone(pt.x, pt.y));
       if (!isDrawingRef.current) return;
       e.preventDefault();
-      const pt = getCanvasPoint(e);
       if (!pt) return;
       const onCone = isOnCone(pt.x, pt.y);
       const last = lastPointRef.current;
@@ -471,6 +473,7 @@ function InfoTab() {
   }, []);
 
   const handlePointerLeave = useCallback(() => {
+    setCursorOnCone(false);
     if (isDrawingRef.current) setHasDrawn(true);
     isDrawingRef.current = false;
     lastPointRef.current = null;
@@ -567,7 +570,7 @@ function InfoTab() {
   }, [buildMask]);
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center p-6">
+    <div className="flex-1 flex flex-col px-6 pt-6 pb-6">
       <img
         ref={coneImageRef}
         src="/cone-info.png"
@@ -577,8 +580,9 @@ function InfoTab() {
         onLoad={() => setImageLoaded(true)}
       />
 
-      <div className="w-full max-w-[520px] mx-auto flex flex-col items-center gap-8 md:gap-10">
-        <p className="text-[10px] leading-relaxed text-gray-700 text-left md:text-center px-2 md:px-0">
+      <div className="w-full max-w-[960px] mx-auto flex flex-col gap-8 md:gap-10">
+        {/* Mobile intro text (desktop version lives in top nav) */}
+        <p className="block md:hidden text-[10px] font-medium leading-tight text-gray-800 text-left w-2/3">
           I’ve always felt a strange connection to traffic cones. Not for any practical reason,
           just the way they exist. Some stand alone, some gather in groups, some stay put for
           weeks while others appear somewhere new every day. There&apos;s something quietly
@@ -589,10 +593,10 @@ function InfoTab() {
           a song that matches its vibe. Every cone has a story.
         </p>
 
-        <div className="flex flex-col items-center gap-4 md:gap-5">
+        <div className="flex flex-col items-center gap-4 md:gap-5 mt-32 md:mt-16">
           <div
             ref={containerRef}
-            className="relative w-full max-w-[380px] md:max-w-[520px] aspect-square touch-none select-none"
+            className="relative w-full max-w-[440px] md:max-w-[640px] aspect-square touch-none select-none"
             style={{ touchAction: 'none' }}
             onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}
@@ -608,8 +612,8 @@ function InfoTab() {
             />
             <canvas
               ref={canvasRef}
-              className="absolute inset-0 w-full h-full cursor-crosshair"
-              style={{ touchAction: 'none' }}
+              className="absolute inset-0 w-full h-full"
+              style={{ touchAction: 'none', cursor: cursorOnCone ? 'crosshair' : 'default' }}
             />
           </div>
 
@@ -638,7 +642,7 @@ function InfoTab() {
                     type="button"
                     onClick={handleUndo}
                     disabled={!canUndo}
-                    className="w-6 h-6 flex items-center justify-center select-none text-[11px]"
+                    className="w-6 h-6 md:w-7 md:h-7 flex items-center justify-center select-none text-[11px] md:text-[12px]"
                     style={{
                       color: canUndo ? '#6b7280' : '#d1d5db',
                       cursor: canUndo ? 'pointer' : 'default',
@@ -649,7 +653,7 @@ function InfoTab() {
                   <button
                     type="button"
                     onClick={handleClear}
-                    className="text-[10px] uppercase text-gray-400 hover:text-gray-600 cursor-pointer select-none"
+                    className="text-[10px] md:text-[11px] uppercase text-gray-400 hover:text-gray-600 cursor-pointer select-none"
                     onMouseDown={(e) => e.preventDefault()}
                     onTouchStart={(e) => e.preventDefault()}
                   >
@@ -659,7 +663,7 @@ function InfoTab() {
                     type="button"
                     onClick={handleRedo}
                     disabled={!canRedo}
-                    className="w-6 h-6 flex items-center justify-center select-none text-[11px]"
+                    className="w-6 h-6 md:w-7 md:h-7 flex items-center justify-center select-none text-[11px] md:text-[12px]"
                     style={{
                       color: canRedo ? '#6b7280' : '#d1d5db',
                       cursor: canRedo ? 'pointer' : 'default',
@@ -1586,8 +1590,8 @@ export default function ConesApp() {
       )}
 
       {/* ── Desktop top nav ── */}
-      <header className="hidden md:flex items-center justify-between px-5 py-2.5">
-        <nav className="flex items-center gap-4">
+      <header className="hidden md:flex items-start justify-between px-5 py-2.5">
+        <nav className="flex items-start gap-4 flex-shrink-0">
           {(['cones', 'info'] as const).map((tab) => (
             <button
               key={tab}
@@ -1603,13 +1607,25 @@ export default function ConesApp() {
           ))}
         </nav>
 
-        {activeTab === 'cones' && (
-          <div className="flex items-center gap-1.5">
-            <FilterPills filter={filter} totalCount={totalCount} mineCount={mineCount} onFilter={setFilter} />
-          </div>
-        )}
+        <div className="flex-1 flex justify-center">
+          {activeTab === 'cones' ? (
+            <div className="flex items-center gap-1.5">
+              <FilterPills filter={filter} totalCount={totalCount} mineCount={mineCount} onFilter={setFilter} />
+            </div>
+          ) : (
+            <p className="hidden md:block mt-1 text-[12px] tracking-[-0.2em] leading-snug text-gray-800 text-left max-w-[500px]">
+              I’ve always felt a strange connection to traffic cones. Not for any practical reason,
+              just the way they exist. Some stand alone, some gather in groups, some stay put for
+              weeks while others appear somewhere new every day. There&apos;s something quietly
+              human about them.
+              {' '}
+              So this is my small tribute to them. Upload a cone, receive its personality profile and
+              a song that matches its vibe. Every cone has a story.
+            </p>
+          )}
+        </div>
 
-        <div className="flex items-center gap-8">
+        <div className="flex items-start gap-8 flex-shrink-0">
           <div className="inline-flex items-center gap-2 rounded-full">
             <button
               type="button"

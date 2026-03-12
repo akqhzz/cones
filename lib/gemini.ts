@@ -9,8 +9,8 @@ If it IS a traffic cone:
 {
   "is_impostor": false,
   "description": "2-3 words that name this cone's archetype. Use simple words. start with 'The'",
-  "about": "3-4 sentences to describe this cone as if this cone were a person with a distinct personality and story, including why it fits its big five personality.
-   Refer it as 'this cone' if there's one cone, or 'These cones' if there are multiple. make the language as natural (doesn't sound like AI) as possible.",
+  "about": "2-3 sentences in total. describe this cone as if this cone were a person with a distinct personality and story, including why it fits its big five personality.
+   Refer it as 'this cone' if there's one cone, or 'These cones' if there are multiple. make the language as natural (doesn't sound like AI) as possible. Make it a bit humorous.",
   "big_five": {
     "openness": 75,
     "conscientiousness": 60,

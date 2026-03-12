@@ -10,7 +10,7 @@ If it IS a traffic cone:
   "is_impostor": false,
   "description": "2-3 words that name this cone's archetype. Use simple words. start with 'The'",
   "about": "2-3 sentences in total. describe this cone as if this cone were a person with a distinct personality and story, including why it fits its big five personality.
-   Refer it as 'this cone' if there's one cone, or 'These cones' if there are multiple. make the language as natural (doesn't sound like AI) as possible. Make it a bit humorous.",
+   Refer it as 'this cone' if therfore's one cone, or 'These cones' if there are multiple. make the language as natural (doesn't sound like AI) as possible. Make it a bit humorous.",
   "big_five": {
     "openness": 75,
     "conscientiousness": 60,
@@ -45,12 +45,16 @@ const safeMime = (m: string): 'image/jpeg' | 'image/png' | 'image/webp' =>
   validMimeTypes.includes(m as any) ? (m as 'image/jpeg' | 'image/png' | 'image/webp') : 'image/jpeg';
 
 // Default multimodal models we will try in order if no explicit list is provided.
-// Ordered by your quota table: higher free RPD first.
+// Ordered by your requested preference:
+// 1) gemini-3.1-flash-lite
+// 2) gemini-3.0-flash
+// 3) gemini-2.5-flash-lite
+// 4) gemini-2.5-flash
 const DEFAULT_GEMINI_MODELS = [
   'gemini-3.1-flash-lite',
   'gemini-3.0-flash', // alias; if unavailable this entry will just fail and we fall through
-  'gemini-2.5-flash',
   'gemini-2.5-flash-lite',
+  'gemini-2.5-flash',
 ] as const;
 
 export async function analyzeConeWithGemini(

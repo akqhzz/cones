@@ -893,6 +893,7 @@ export default function ConesApp() {
   const redoStackRef = useRef<Cone[]>([]);
   const pendingRestoreIndexRef = useRef<number | null>(null);
   const hasCachedConesRef = useRef(false);
+  const isCroppingRef = useRef(false);
   const [restoreInstant, setRestoreInstant] = useState(false);
   const [returnScrollIndex, setReturnScrollIndex] = useState<number | null>(null);
   const router = useRouter();
@@ -1065,6 +1066,7 @@ export default function ConesApp() {
 
     const handleWheel = (e: WheelEvent) => {
       if (!isDesktop) return;
+      if (isCroppingRef.current) return;
       const isHorizontal =
         Math.abs(e.deltaX) >= Math.abs(e.deltaY) || Math.abs(e.deltaX) > 1;
       if (!isHorizontal) return;
@@ -1276,7 +1278,7 @@ export default function ConesApp() {
     cropNaturalRef.current = null;
     setCropNatural(null);
     setCropContainerSize(300);
-    setIsCropping(true);
+    isCroppingRef.current = true; setIsCropping(true);
   };
 
   const handleDelete = async (cone: Cone) => {
@@ -1505,7 +1507,7 @@ export default function ConesApp() {
       const containerSize = cropContainerRef.current?.offsetWidth ?? 300;
       const cropped = await cropImageToSquare(pendingUploadFile, cropTranslate.x, cropTranslate.y, cropScale, containerSize);
       if (cropPreviewUrl) URL.revokeObjectURL(cropPreviewUrl);
-      setIsCropping(false);
+      isCroppingRef.current = false; setIsCropping(false);
       setCropPreviewUrl(null);
       setPendingUploadFile(null);
       await uploadConeFile(cropped);
@@ -1513,7 +1515,7 @@ export default function ConesApp() {
       // Fallback: try original file
       if (cropPreviewUrl) URL.revokeObjectURL(cropPreviewUrl);
       const original = pendingUploadFile;
-      setIsCropping(false);
+      isCroppingRef.current = false; setIsCropping(false);
       setCropPreviewUrl(null);
       setPendingUploadFile(null);
       await uploadConeFile(original);
@@ -1524,7 +1526,7 @@ export default function ConesApp() {
     if (cropPreviewUrl) URL.revokeObjectURL(cropPreviewUrl);
     setCropPreviewUrl(null);
     setPendingUploadFile(null);
-    setIsCropping(false);
+    isCroppingRef.current = false; setIsCropping(false);
   };
 
   useEffect(() => {
@@ -1609,7 +1611,7 @@ export default function ConesApp() {
             Zoom/Pan to Crop
           </p>
           <div
-            ref={cropContainerRef}
+            ref={(el) => { cropContainerRef.current = el; if (el) setCropContainerSize(el.offsetWidth); }}
             className="w-full max-w-xs md:w-[300px] md:max-w-[300px] aspect-square bg-gray-100 overflow-hidden cursor-grab active:cursor-grabbing relative"
             style={{ touchAction: 'none' }}
             onTouchStart={handleCropTouchStart}

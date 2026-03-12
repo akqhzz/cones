@@ -576,84 +576,102 @@ function InfoTab() {
         crossOrigin="anonymous"
         onLoad={() => setImageLoaded(true)}
       />
-      <div
-        ref={containerRef}
-        className="relative w-full max-w-[380px] md:max-w-[520px] aspect-square touch-none select-none mt-10 md:mt-0"
-        style={{ touchAction: 'none' }}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerLeave={handlePointerLeave}
-        onPointerCancel={handlePointerUp}
-      >
-        <img
-          src="/cone-info.png"
-          alt=""
-          className="absolute inset-0 w-full h-full object-contain pointer-events-none"
-          draggable={false}
-        />
-        <canvas
-          ref={canvasRef}
-          className="absolute inset-0 w-full h-full cursor-crosshair"
-          style={{ touchAction: 'none' }}
-        />
-      </div>
-      <div className="mt-3 flex items-center justify-center">
-        {/* Color palette */}
-        <div className="flex items-center gap-1.5">
-          {['#000000', '#f97316', '#22c55e', '#0ea5e9', '#ffffff'].map((c) => (
-            <button
-              key={c}
-              type="button"
-              onClick={() => setStrokeColor(c)}
-              className="w-3.5 h-3.5 rounded-full border cursor-pointer"
-              style={{
-                backgroundColor: c,
-                borderColor: strokeColor === c ? '#111' : '#d4d4d4',
-              }}
+
+      <div className="w-full max-w-[520px] mx-auto flex flex-col items-center gap-8 md:gap-10">
+        <p className="text-[10px] leading-relaxed text-gray-700 text-left md:text-center px-2 md:px-0">
+          I’ve always felt a strange connection to traffic cones. Not for any practical reason,
+          just the way they exist. Some stand alone, some gather in groups, some stay put for
+          weeks while others appear somewhere new every day. There&apos;s something quietly
+          human about them.
+          <br />
+          <br />
+          So this is my small tribute to them. Upload a cone, receive its personality profile and
+          a song that matches its vibe. Every cone has a story.
+        </p>
+
+        <div className="flex flex-col items-center gap-4 md:gap-5">
+          <div
+            ref={containerRef}
+            className="relative w-full max-w-[380px] md:max-w-[520px] aspect-square touch-none select-none"
+            style={{ touchAction: 'none' }}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerLeave={handlePointerLeave}
+            onPointerCancel={handlePointerUp}
+          >
+            <img
+              src="/cone-info.png"
+              alt=""
+              className="absolute inset-0 w-full h-full object-contain pointer-events-none"
+              draggable={false}
             />
-          ))}
+            <canvas
+              ref={canvasRef}
+              className="absolute inset-0 w-full h-full cursor-crosshair"
+              style={{ touchAction: 'none' }}
+            />
+          </div>
+
+          <div className="flex flex-col items-center gap-2">
+            {/* Color palette */}
+            <div className="flex items-center gap-1.5">
+              {['#000000', '#f97316', '#22c55e', '#0ea5e9', '#ffffff'].map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setStrokeColor(c)}
+                  className="w-3.5 h-3.5 rounded-full border cursor-pointer"
+                  style={{
+                    backgroundColor: c,
+                    borderColor: strokeColor === c ? '#111' : '#d4d4d4',
+                  }}
+                />
+              ))}
+            </div>
+
+            {/* Undo / Clear / Redo row (visible only after drawing) */}
+            <div className="flex items-center justify-center gap-5 h-7">
+              {hasDrawn && (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleUndo}
+                    disabled={!canUndo}
+                    className="w-6 h-6 flex items-center justify-center select-none text-[11px]"
+                    style={{
+                      color: canUndo ? '#6b7280' : '#d1d5db',
+                      cursor: canUndo ? 'pointer' : 'default',
+                    }}
+                  >
+                    ↺
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleClear}
+                    className="text-[10px] uppercase text-gray-400 hover:text-gray-600 cursor-pointer select-none"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onTouchStart={(e) => e.preventDefault()}
+                  >
+                    Clear
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleRedo}
+                    disabled={!canRedo}
+                    className="w-6 h-6 flex items-center justify-center select-none text-[11px]"
+                    style={{
+                      color: canRedo ? '#6b7280' : '#d1d5db',
+                      cursor: canRedo ? 'pointer' : 'default',
+                    }}
+                  >
+                    ↻
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
         </div>
-      </div>
-      {/* Undo / Clear / Redo row (visible only after drawing) */}
-      <div className="mt-3 flex items-center justify-center gap-5 h-7">
-        {hasDrawn && (
-          <>
-            <button
-              type="button"
-              onClick={handleUndo}
-              disabled={!canUndo}
-              className="w-6 h-6 flex items-center justify-center select-none text-[11px]"
-              style={{
-                color: canUndo ? '#6b7280' : '#d1d5db',
-                cursor: canUndo ? 'pointer' : 'default',
-              }}
-            >
-              ↺
-            </button>
-            <button
-              type="button"
-              onClick={handleClear}
-              className="text-[10px] uppercase text-gray-400 hover:text-gray-600 cursor-pointer select-none"
-              onMouseDown={(e) => e.preventDefault()}
-              onTouchStart={(e) => e.preventDefault()}
-            >
-              Clear
-            </button>
-            <button
-              type="button"
-              onClick={handleRedo}
-              disabled={!canRedo}
-              className="w-6 h-6 flex items-center justify-center select-none text-[11px]"
-              style={{
-                color: canRedo ? '#6b7280' : '#d1d5db',
-                cursor: canRedo ? 'pointer' : 'default',
-              }}
-            >
-              ↻
-            </button>
-          </>
-        )}
       </div>
     </div>
   );

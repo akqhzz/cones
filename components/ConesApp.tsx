@@ -1637,6 +1637,8 @@ export default function ConesApp() {
                     position: 'absolute' as const,
                     width: rW,
                     height: rH,
+                    maxWidth: 'none',
+                    maxHeight: 'none',
                     left: (cropContainerSize - rW) / 2 + cropTranslate.x,
                     top: (cropContainerSize - rH) / 2 + cropTranslate.y,
                   };

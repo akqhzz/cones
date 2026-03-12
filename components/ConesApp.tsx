@@ -688,12 +688,7 @@ function InfoTab() {
               {/* Custom color picker */}
               <button
                 type="button"
-                onClick={() => colorInputRef.current?.click()}
-                onTouchStart={(e) => {
-                  e.preventDefault();
-                  colorInputRef.current?.click();
-                }}
-                className="w-3 h-3 rounded-full cursor-pointer flex items-center justify-center text-[10px] leading-none"
+                className="relative w-3 h-3 rounded-full cursor-pointer flex items-center justify-center text-[10px] leading-none"
                 style={{
                   border: 'none',
                   backgroundColor: strokeColor === customColor ? customColor : 'transparent',
@@ -701,18 +696,18 @@ function InfoTab() {
                 }}
               >
                 {strokeColor === customColor ? '' : '+'}
+                <input
+                  ref={colorInputRef}
+                  type="color"
+                  className="absolute inset-0 opacity-0 cursor-pointer"
+                  value={customColor}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setCustomColor(val);
+                    setStrokeColor(val);
+                  }}
+                />
               </button>
-              <input
-                ref={colorInputRef}
-                type="color"
-                className="hidden"
-                value={customColor}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setCustomColor(val);
-                  setStrokeColor(val);
-                }}
-              />
             </div>
 
             {/* Undo / Clear / Redo row (visible only after drawing) */}

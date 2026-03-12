@@ -1224,7 +1224,6 @@ export default function ConesApp() {
       core_values: [],
       song_title: null,
       song_artist: null,
-      spotify_track_id: null,
       song_url: null,
       bandcamp_album_id: null,
       bandcamp_track_id: null,

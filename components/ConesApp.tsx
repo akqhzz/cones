@@ -342,6 +342,7 @@ function InfoTab() {
   const [hasDrawn, setHasDrawn] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [strokeColor, setStrokeColor] = useState<string>('#000000');
+  const [customColor, setCustomColor] = useState<string>('#ff0000');
   const undoStackRef = useRef<ImageData[]>([]);
   const redoStackRef = useRef<ImageData[]>([]);
   const [canUndo, setCanUndo] = useState(false);
@@ -350,6 +351,7 @@ function InfoTab() {
   const [coneSize, setConeSize] = useState<number | null>(null);
   const isDrawingRef = useRef(false);
   const lastPointRef = useRef<{ x: number; y: number } | null>(null);
+  const colorInputRef = useRef<HTMLInputElement | null>(null);
 
   const buildMask = useCallback(() => {
     const canvas = canvasRef.current;
@@ -616,7 +618,7 @@ function InfoTab() {
   }, []);
 
   return (
-    <div className="flex-1 flex flex-col px-6 pt-6 pb-5 md:pb-6">
+    <div className="flex-1 flex flex-col px-6 pt-6 pb-0 md:pb-6">
       <img
         ref={coneImageRef}
         src="/cone-info.png"
@@ -639,7 +641,7 @@ function InfoTab() {
           a song that matches its vibe. Every cone has a story.
         </p>
 
-        <div className="flex flex-col items-center gap-4 md:gap-5 mt-8 md:mt-16 mb-5 md:mb-0">
+        <div className="flex flex-col items-center gap-4 md:gap-5 mt-8 md:mt-16 mb-0">
           <div
             ref={containerRef}
             className="relative w-full max-w-[440px] md:max-w-[640px] aspect-square touch-none select-none"
@@ -671,7 +673,7 @@ function InfoTab() {
           <div className="flex flex-col items-center gap-2">
             {/* Color palette */}
             <div className="flex items-center gap-1.5">
-              {['#000000', '#f97316', '#22c55e', '#0ea5e9', '#ffffff'].map((c) => (
+              {['#000000', '#0C2FAB', '#FCD142', '#ffffff'].map((c) => (
                 <button
                   key={c}
                   type="button"
@@ -683,6 +685,30 @@ function InfoTab() {
                   }}
                 />
               ))}
+              {/* Custom color picker */}
+              <button
+                type="button"
+                onClick={() => colorInputRef.current?.click()}
+                className="w-3.5 h-3.5 rounded-full cursor-pointer flex items-center justify-center text-[10px] leading-none"
+                style={{
+                  border: 'none',
+                  backgroundColor: strokeColor === customColor ? customColor : 'transparent',
+                  color: '#555',
+                }}
+              >
+                {strokeColor === customColor ? '' : '+'}
+              </button>
+              <input
+                ref={colorInputRef}
+                type="color"
+                className="hidden"
+                value={customColor}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setCustomColor(val);
+                  setStrokeColor(val);
+                }}
+              />
             </div>
 
             {/* Undo / Clear / Redo row (visible only after drawing) */}

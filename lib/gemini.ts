@@ -44,6 +44,15 @@ const validMimeTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'] as
 const safeMime = (m: string): 'image/jpeg' | 'image/png' | 'image/webp' =>
   validMimeTypes.includes(m as any) ? (m as 'image/jpeg' | 'image/png' | 'image/webp') : 'image/jpeg';
 
+// Default multimodal models we will try in order if no explicit list is provided.
+// Ordered by your quota table: higher free RPD first.
+const DEFAULT_GEMINI_MODELS = [
+  'gemini-3.1-flash-lite',
+  'gemini-3.0-flash', // alias; if unavailable this entry will just fail and we fall through
+  'gemini-2.5-flash',
+  'gemini-2.5-flash-lite',
+] as const;
+
 export async function analyzeConeWithGemini(
   imageBuffer: Buffer,
   mimeType: string
@@ -57,34 +66,73 @@ export async function analyzeConeWithGemini(
   const base64 = imageBuffer.toString('base64');
   const mime = safeMime(mimeType);
 
-  const response = await ai.models.generateContent({
-    model: process.env.GEMINI_MODEL ?? 'gemini-2.0-flash',
-    contents: [
-      {
-        parts: [
+  // Build ordered model list:
+  // - If GEMINI_MODEL is set, try that first.
+  // - If GEMINI_MODELS is set, try those in order (after GEMINI_MODEL if present).
+  // - Then fall back to DEFAULT_GEMINI_MODELS.
+  const envPrimary = process.env.GEMINI_MODEL?.trim();
+  const envList =
+    process.env.GEMINI_MODELS
+      ?.split(',')
+      .map((m) => m.trim())
+      .filter(Boolean) ?? [];
+
+  const candidateModels: string[] = [];
+  if (envPrimary) candidateModels.push(envPrimary);
+  for (const m of envList) {
+    if (!candidateModels.includes(m)) candidateModels.push(m);
+  }
+  for (const m of DEFAULT_GEMINI_MODELS) {
+    if (!candidateModels.includes(m)) candidateModels.push(m);
+  }
+
+  let lastError: unknown;
+
+  for (const model of candidateModels) {
+    try {
+      const response = await ai.models.generateContent({
+        model,
+        contents: [
           {
-            inlineData: {
-              data: base64,
-              mimeType: mime,
-            },
-          },
-          {
-            text: PROMPT,
+            parts: [
+              {
+                inlineData: {
+                  data: base64,
+                  mimeType: mime,
+                },
+              },
+              {
+                text: PROMPT,
+              },
+            ],
           },
         ],
-      },
-    ],
-  });
+      });
 
-  const raw = (response.text ?? '').trim();
-  // Strip markdown code fences if present
-  const text = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
-  if (!text) throw new Error('Gemini returned empty response');
-  try {
-    return JSON.parse(text);
-  } catch {
-    const match = text.match(/\{[\s\S]*\}/);
-    if (match) return JSON.parse(match[0]);
-    throw new Error('Failed to parse Gemini response: ' + text.slice(0, 300));
+      const raw = (response.text ?? '').trim();
+      // Strip markdown code fences if present
+      const text = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
+      if (!text) {
+        throw new Error(`Gemini (${model}) returned empty response`);
+      }
+      try {
+        return JSON.parse(text);
+      } catch {
+        const match = text.match(/\{[\s\S]*\}/);
+        if (match) return JSON.parse(match[0]);
+        throw new Error(`Failed to parse Gemini (${model}) response: ` + text.slice(0, 300));
+      }
+    } catch (err) {
+      // Save error and try the next model.
+      lastError = err;
+      // eslint-disable-next-line no-console
+      console.error(`Gemini model "${model}" failed, trying next model if available:`, err);
+    }
   }
+
+  // If we get here, all models failed.
+  if (lastError instanceof Error) {
+    throw lastError;
+  }
+  throw new Error('All Gemini models failed for cone analysis.');
 }

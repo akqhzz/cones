@@ -69,11 +69,22 @@ export async function POST(request: NextRequest) {
   // Insert placeholder
   await insertCone({ id, session_id: sessionId, image_path: imagePath });
 
-  // Analyze with Gemini when key is set; otherwise use mock data only (no Claude)
+  // Analyze with Gemini when key is set; on any Gemini failure (including quota),
+  // gracefully fall back to the mock/Claude-based analysis so the profile is never empty.
   try {
-    const analysis = process.env.GEMINI_API_KEY
-      ? await analyzeConeWithGemini(buffer, mimeType)
-      : await analyzeCone(buffer, mimeType);
+    let analysis;
+    if (process.env.GEMINI_API_KEY) {
+      try {
+        analysis = await analyzeConeWithGemini(buffer, mimeType);
+      } catch (gemErr) {
+        const msg =
+          gemErr instanceof Error ? gemErr.message : JSON.stringify(gemErr);
+        console.error('Gemini analysis failed, falling back to mock analysis:', msg);
+        analysis = await analyzeCone(buffer, mimeType);
+      }
+    } else {
+      analysis = await analyzeCone(buffer, mimeType);
+    }
 
     const song = getSongForSloan(analysis.sloan ?? null);
 

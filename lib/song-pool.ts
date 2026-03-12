@@ -57,11 +57,11 @@ export const SONGS_BY_SLOAN: Record<string, SongEntry[]> = {
   ],
   SCUAI: [
     {
-      song_title: '#3',
-      song_artist: 'Aphex Twin',
-      song_url: DEFAULT_SONG_URL,
-      bandcamp_album_id: DEFAULT_BANDCAMP_ALBUM_ID,
-      bandcamp_track_id: DEFAULT_BANDCAMP_TRACK_ID,
+      song_title: 'People On Sunday',
+      song_artist: 'Domenique Dumont',
+      song_url: 'https://open.spotify.com/track/5GY0OnbXEa7rMivlDo13Xl?si=138415422741457d',
+      bandcamp_album_id: '2248662711',
+      bandcamp_track_id: '3702294995',
     },
   ],
   SCUAN: [
@@ -93,11 +93,11 @@ export const SONGS_BY_SLOAN: Record<string, SongEntry[]> = {
   ],
   SLOAI: [
     {
-      song_title: '#3',
-      song_artist: 'Aphex Twin',
-      song_url: DEFAULT_SONG_URL,
-      bandcamp_album_id: DEFAULT_BANDCAMP_ALBUM_ID,
-      bandcamp_track_id: DEFAULT_BANDCAMP_TRACK_ID,
+      song_title: 'El Invento',
+      song_artist: 'José González',
+      song_url: 'https://open.spotify.com/track/7daItyBA4UqHyFItCVgzBn?si=19b7d20e7e9f4386',
+      bandcamp_album_id: '3951673169',
+      bandcamp_track_id: '1542568182',
     },
   ],
   SLOAN: [

@@ -1613,7 +1613,7 @@ export default function ConesApp() {
               <FilterPills filter={filter} totalCount={totalCount} mineCount={mineCount} onFilter={setFilter} />
             </div>
           ) : (
-            <p className="hidden md:block mt-1 text-[12px] tracking-[-0.2em] leading-snug text-gray-800 text-left max-w-[500px]">
+            <p className="hidden md:block mt-1 font-medium text-[11px] tracking-[-0.02em] leading-snug text-gray-800 text-left max-w-[500px]">
               I’ve always felt a strange connection to traffic cones. Not for any practical reason,
               just the way they exist. Some stand alone, some gather in groups, some stay put for
               weeks while others appear somewhere new every day. There&apos;s something quietly

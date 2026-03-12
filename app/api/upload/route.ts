@@ -100,10 +100,11 @@ export async function POST(request: NextRequest) {
     const cone = await getConeById(id);
     return NextResponse.json({ cone });
   } catch (err) {
-    console.error('Analysis error:', err);
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('Analysis error:', msg);
     const cone = await getConeById(id);
     return NextResponse.json(
-      { cone, error: 'Analysis failed' },
+      { cone, error: msg },
       { status: 500 }
     );
   }

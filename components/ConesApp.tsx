@@ -1228,6 +1228,7 @@ export default function ConesApp() {
     try {
       const res = await fetch('/api/upload', { method: 'POST', body: formData });
       const data = await res.json();
+      if (data.error) console.error('[upload] analysis error:', data.error);
       if (data.cone) {
         URL.revokeObjectURL(blobUrl);
         const list = await fetchCones('mine', sessionId);

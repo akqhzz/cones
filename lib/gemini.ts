@@ -76,12 +76,15 @@ export async function analyzeConeWithGemini(
     ],
   });
 
-  const text = (response.text ?? '').trim();
+  const raw = (response.text ?? '').trim();
+  // Strip markdown code fences if present
+  const text = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
+  if (!text) throw new Error('Gemini returned empty response');
   try {
     return JSON.parse(text);
   } catch {
     const match = text.match(/\{[\s\S]*\}/);
     if (match) return JSON.parse(match[0]);
-    throw new Error('Failed to parse Gemini response: ' + text.slice(0, 200));
+    throw new Error('Failed to parse Gemini response: ' + text.slice(0, 300));
   }
 }

@@ -280,11 +280,14 @@ function Carousel({
             const size = getCardSize(i);
             const opacity = getOpacity(i);
             const isActive = i === currentIndex;
+            const isPlaceholder = cone.id === 'temp' && (cone as any).is_analyzed === 0;
 
             return (
               <div
                 key={cone.id}
-                className="flex-shrink-0 overflow-hidden bg-gray-50 group"
+                className={`flex-shrink-0 overflow-hidden group ${
+                  isPlaceholder ? 'bg-gray-200' : 'bg-gray-50'
+                }`}
                 style={{
                   width: size,
                   height: size,
@@ -298,14 +301,16 @@ function Carousel({
                 }}
                 onClick={() => {
                   if (wasDragging.current) return;
-                  if (isActive) {
+                  if (isPlaceholder) {
+                    onOpenProfile(cone, i);
+                  } else if (isActive) {
                     onOpenProfile(cone, i);
                   } else {
                     onChange(i);
                   }
                 }}
               >
-                {cone.image_path && (
+                {!isPlaceholder && cone.image_path && (
                   <img
                     src={cone.image_path}
                     alt={cone.description || 'Cone'}
@@ -1034,6 +1039,19 @@ export default function ConesApp() {
     [cones]
   );
 
+  // When uploading a new cone and analysis is in progress (or the analyzing screen was closed),
+  // append a placeholder cone at the end of the carousel so it can be centered and re-opened.
+  const carouselCones = useMemo(() => {
+    if (
+      isUploading &&
+      lastUploadedCone &&
+      !displayCones.some((c) => c.id === lastUploadedCone.id)
+    ) {
+      return [...displayCones, lastUploadedCone];
+    }
+    return displayCones;
+  }, [displayCones, isUploading, lastUploadedCone]);
+
   useEffect(() => {
     if (sessionId) fetchCones(filter, sessionId);
   }, [sessionId, filter, fetchCones]);
@@ -1220,6 +1238,8 @@ export default function ConesApp() {
     };
     setAnalyzingCone(tempCone);
     setLastUploadedCone(tempCone);
+    // Center the placeholder cone at the end of the carousel while analysis runs.
+    setCurrentIndex(displayCones.length);
 
     const formData = new FormData();
     formData.append('image', file);
@@ -1835,12 +1855,19 @@ export default function ConesApp() {
 
             {/* Carousel — full viewport width, no centering wrapper */}
             <Carousel
-              cones={displayCones}
+              cones={carouselCones}
               currentIndex={currentIndex}
               onChange={setCurrentIndex}
               wheelDisabled={isDesktop}
               instantPosition={restoreInstant}
               onOpenProfile={(cone, index) => {
+                // If this is the temporary placeholder cone for an in-progress upload,
+                // re-open the analyzing screen instead of navigating to a profile page.
+                if (cone.id === 'temp' && (cone as any).is_analyzed === 0 && lastUploadedCone) {
+                  setAnalyzingCone(lastUploadedCone);
+                  setActiveTab('cones');
+                  return;
+                }
                 sessionStorage.setItem('cones_return_index', String(index));
                 sessionStorage.setItem('cones_return_filter', filter);
                 sessionStorage.setItem('cones_display_list', JSON.stringify(displayCones));
@@ -1861,7 +1888,7 @@ export default function ConesApp() {
                 type="button"
                 aria-label="Previous cone"
                 onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}
-                disabled={displayCones.length <= 1 || currentIndex === 0}
+                disabled={carouselCones.length <= 1 || currentIndex === 0}
                 className="flex w-9 h-9 md:w-10 md:h-10 rounded-full bg-white items-center justify-center text-gray-500 md:hover:bg-gray-50 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-gray-100"
                 onMouseDown={(e) => {
                   if (e.button !== 0) return;
@@ -1878,7 +1905,7 @@ export default function ConesApp() {
               >
                 <LeftArrowIcon />
               </button>
-              {displayCones.length > 1 ? (
+              {carouselCones.length > 1 ? (
                 <button
                   onClick={handleShuffle}
                   className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 md:hover:bg-gray-200 transition-all cursor-pointer"
@@ -1891,8 +1918,8 @@ export default function ConesApp() {
               <button
                 type="button"
                 aria-label="Next cone"
-                onClick={() => setCurrentIndex((i) => Math.min(displayCones.length - 1, i + 1))}
-                disabled={displayCones.length <= 1 || currentIndex === displayCones.length - 1}
+                onClick={() => setCurrentIndex((i) => Math.min(carouselCones.length - 1, i + 1))}
+                disabled={carouselCones.length <= 1 || currentIndex === carouselCones.length - 1}
                 className="flex w-9 h-9 md:w-10 md:h-10 rounded-full bg-white items-center justify-center text-gray-500 md:hover:bg-gray-50 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-gray-100"
                 onMouseDown={(e) => {
                   if (e.button !== 0) return;

@@ -285,9 +285,7 @@ function Carousel({
             return (
               <div
                 key={cone.id}
-                className={`flex-shrink-0 overflow-hidden group ${
-                  isPlaceholder ? 'bg-gray-200' : 'bg-gray-50'
-                }`}
+                className="flex-shrink-0 overflow-hidden bg-gray-50 group"
                 style={{
                   width: size,
                   height: size,
@@ -310,7 +308,7 @@ function Carousel({
                   }
                 }}
               >
-                {!isPlaceholder && cone.image_path && (
+                {cone.image_path && (
                   <img
                     src={cone.image_path}
                     alt={cone.description || 'Cone'}
@@ -1610,7 +1608,7 @@ export default function ConesApp() {
     }
   };
 
-  const activeCone = displayCones[currentIndex];
+  const activeCone = carouselCones[currentIndex] ?? null;
   const infoCone = lastUploadedCone ?? activeCone;
 
   const formattedActiveDate = activeCone?.created_at

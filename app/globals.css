@@ -16,6 +16,7 @@ body {
   letter-spacing: 0;
   overflow: hidden;
   height: 100%;
+  overscroll-behavior-x: none;
 }
 
 * {

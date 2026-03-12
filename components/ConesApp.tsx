@@ -1251,6 +1251,12 @@ export default function ConesApp() {
           sessionStorage.setItem('cones_display_list', JSON.stringify(displayCones));
           sessionStorage.setItem('cones_profile_key', urlKey);
           sessionStorage.setItem('cones_profile_cone', JSON.stringify(displayCones[arrayIndex]));
+          // On close, return carousel to new cone; restore index view if user was in it
+          sessionStorage.setItem('cones_return_index', String(arrayIndex));
+          sessionStorage.setItem('cones_return_filter', 'mine');
+          if (viewMode === 'index') {
+            sessionStorage.setItem('cones_return_view', 'index');
+          }
           router.push(`/cones/${urlKey}?filter=mine`);
         }
         setFilter('mine');

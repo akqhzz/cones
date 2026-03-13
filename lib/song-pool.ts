@@ -279,6 +279,34 @@ export const SONGS_BY_SLOAN: Record<string, SongEntry[]> = {
       bandcamp_album_id: '912600713',
       bandcamp_track_id: '2797720846',
     },
+    {
+      song_title: 'Ground and Grave',
+      song_artist: 'Ora Cogan',
+      song_url: 'https://open.spotify.com/track/6JbWR0tMFi2bmSnOh50kKG?si=94763657d9d84717',
+      bandcamp_album_id: '3927565751',
+      bandcamp_track_id: '3112985471',
+    },
+    {
+      song_title: 'Dream Odyssey',
+      song_artist: 'MONO',
+      song_url: 'https://open.spotify.com/track/1mNLJ6NjBPbWjmbbdMLCzf?si=7721c12719fc4e3d',
+      bandcamp_album_id: '387017190',
+      bandcamp_track_id: '3976603346',
+    },
+    {
+      song_title: 'Are Your There?',
+      song_artist: 'MONO',
+      song_url: 'https://open.spotify.com/track/5uK3MgCUXANoPoAhWqdfe8?si=00ed43a9e2c94311',
+      bandcamp_album_id: '2030436015',
+      bandcamp_track_id: '1218005742',
+    },
+    {
+      song_title: 'Migration of Souls',
+      song_artist: 'M.Ward',
+      song_url: 'https://open.spotify.com/track/2GmGy1eJTvPACm3ekX0hxD?si=cba8f2db03ab4e11',
+      bandcamp_album_id: '203984459',
+      bandcamp_track_id: '3686102028',
+    },
   ],
   RLUAN: [
     {

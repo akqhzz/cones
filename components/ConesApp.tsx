@@ -2074,6 +2074,7 @@ export default function ConesApp() {
             </div>
 
             {/* Carousel — full viewport width, no centering wrapper */}
+            <div className="md:-mt-24">
             <Carousel
               cones={carouselCones}
               currentIndex={currentIndex}
@@ -2100,6 +2101,7 @@ export default function ConesApp() {
               onUploadClick={() => fileInputRef.current?.click()}
               loading={conesLoading}
             />
+            </div>
 
             {/* Shuffle button — desktop: with left/right arrows */}
             <div className="flex justify-center items-center gap-2 md:absolute md:bottom-8 md:left-0 md:right-0">

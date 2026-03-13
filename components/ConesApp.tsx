@@ -762,7 +762,7 @@ function InfoTab() {
         <div className="flex flex-col items-center gap-4 md:gap-5 mt-8 md:mt-16 mb-0">
           <div
             ref={containerRef}
-            className="relative w-full max-w-[440px] md:max-w-[640px] aspect-square touch-none select-none"
+            className="relative w-full max-w-[440px] md:max-w-[480px] aspect-square touch-none select-none"
             style={{
               touchAction: 'none',
               width: coneSize ?? undefined,

@@ -68,18 +68,13 @@ function DesktopCarousel({
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
-  // Momentum scroll state
-  const posRef = useRef(0);         // current visual scroll position
-  const velRef = useRef(0);         // momentum velocity (px/frame)
-  const rafRef = useRef<number | null>(null);
-  // External nav (buttons/shuffle) uses lerp toward a target
+  const posRef = useRef(0);
   const navTargetRef = useRef<number | null>(null);
-  // Drag state
+  const rafRef = useRef<number | null>(null);
   const isDragRef = useRef(false);
   const wasDragRef = useRef(false);
   const dragX0Ref = useRef(0);
   const dragS0Ref = useRef(0);
-  // Index tracking
   const suppressChangeRef = useRef(false);
   const prevIndexRef = useRef(currentIndex);
 
@@ -104,43 +99,27 @@ function DesktopCarousel({
     }
   }, [cones.length, onChange]);
 
-  // Single RAF loop — handles both momentum scroll and external nav lerp
+  // RAF loop — only for button/shuffle navigation (lerp to target).
+  // Scroll/trackpad is applied directly; no RAF needed for those.
   const animFnRef = useRef<() => void>(() => {});
   animFnRef.current = () => {
-    const max = getMax();
-    let pos = posRef.current;
-
-    if (navTargetRef.current !== null) {
-      // External nav: lerp toward target
-      const diff = navTargetRef.current - pos;
-      if (Math.abs(diff) < 0.5) {
-        pos = navTargetRef.current;
-        navTargetRef.current = null;
-        velRef.current = 0;
-      } else {
-        pos += diff * 0.12;
-      }
-    } else {
-      // Momentum: apply velocity with friction
-      pos += velRef.current;
-      velRef.current *= 0.94;
-    }
-
-    pos = Math.max(0, Math.min(max, pos));
-    posRef.current = pos;
-    applyTransform(pos);
-    updateActiveIndex(pos);
-
-    const stillMoving = navTargetRef.current !== null || Math.abs(velRef.current) > 0.3;
-    if (stillMoving) {
-      rafRef.current = requestAnimationFrame(() => animFnRef.current());
-    } else {
-      velRef.current = 0;
+    if (navTargetRef.current === null) { rafRef.current = null; return; }
+    const diff = navTargetRef.current - posRef.current;
+    if (Math.abs(diff) < 0.5) {
+      posRef.current = navTargetRef.current;
+      navTargetRef.current = null;
+      applyTransform(posRef.current);
+      updateActiveIndex(posRef.current);
       rafRef.current = null;
+    } else {
+      posRef.current += diff * 0.15;
+      applyTransform(posRef.current);
+      updateActiveIndex(posRef.current);
+      rafRef.current = requestAnimationFrame(() => animFnRef.current());
     }
   };
 
-  const startAnim = useCallback(() => {
+  const startNavAnim = useCallback(() => {
     if (!rafRef.current) rafRef.current = requestAnimationFrame(() => animFnRef.current());
   }, []);
 
@@ -148,17 +127,16 @@ function DesktopCarousel({
     const w = containerRef.current?.offsetWidth ?? 1440;
     const coneCenter = DP + idx * (DC + DG) + DC / 2;
     const target = Math.max(0, Math.min(getMax(), coneCenter - w / 2));
-    velRef.current = 0;
     if (instant) {
       navTargetRef.current = null;
-      posRef.current = target;
       if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null; }
+      posRef.current = target;
       applyTransform(target);
     } else {
       navTargetRef.current = target;
-      startAnim();
+      startNavAnim();
     }
-  }, [getMax, startAnim]);
+  }, [getMax, startNavAnim]);
 
   // Respond to external currentIndex changes (shuffle, arrows)
   useEffect(() => {
@@ -169,29 +147,33 @@ function DesktopCarousel({
     scrollToIndex(currentIndex, !!instantPosition);
   }, [currentIndex, instantPosition, scrollToIndex, cones.length]);
 
-  // Wheel / trackpad — inject velocity directly (no fixed target)
+  // Wheel/trackpad: apply delta directly — no velocity accumulation, no RAF lag.
+  // The OS already provides momentum deceleration for trackpad; we don't need our own.
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
+      // Cancel any in-progress button-nav animation
+      if (navTargetRef.current !== null) {
+        navTargetRef.current = null;
+        if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null; }
+      }
       const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
-      navTargetRef.current = null;  // cancel any button-nav animation
-      velRef.current += delta;
-      // Cap velocity to prevent runaway
-      velRef.current = Math.max(-80, Math.min(80, velRef.current));
-      startAnim();
+      const newPos = Math.max(0, Math.min(getMax(), posRef.current + delta));
+      posRef.current = newPos;
+      applyTransform(newPos);
+      updateActiveIndex(newPos);
     };
     el.addEventListener('wheel', onWheel, { passive: false });
     return () => el.removeEventListener('wheel', onWheel);
-  }, [cones.length, getMax, startAnim]);
+  }, [cones.length, getMax, updateActiveIndex]);
 
   const onMouseDown = (e: React.MouseEvent) => {
     isDragRef.current = true;
     wasDragRef.current = false;
     dragX0Ref.current = e.clientX;
     dragS0Ref.current = posRef.current;
-    velRef.current = 0;
     navTargetRef.current = null;
   };
   const onMouseMove = (e: React.MouseEvent) => {
@@ -233,7 +215,7 @@ function DesktopCarousel({
       <div
         ref={trackRef}
         className="absolute top-0 flex items-center"
-        style={{ height: TOTAL_H, gap: DG, paddingLeft: DP, paddingRight: DP }}
+        style={{ height: TOTAL_H, gap: DG, paddingLeft: DP, paddingRight: DP, willChange: 'transform' }}
       >
         {cones.map((cone, i) => (
           <div key={cone.id} className="flex-shrink-0 flex flex-col items-start" style={{ gap: 6 }}>

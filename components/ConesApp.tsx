@@ -42,203 +42,6 @@ function RightArrowIcon() {
   );
 }
 
-// ── Desktop smooth-scroll carousel ────────────────────────────────────────────
-const DC = 240;  // card size px
-const DG = 36;   // gap px
-const DP = 48;   // left/right padding px
-
-function DesktopCarousel({
-  cones,
-  currentIndex,
-  onChange,
-  onOpenProfile,
-  loading,
-  filter,
-  onUploadClick,
-  instantPosition,
-}: {
-  cones: Cone[];
-  currentIndex: number;
-  onChange: (i: number) => void;
-  onOpenProfile: (cone: Cone, index: number) => void;
-  filter: 'all' | 'mine';
-  onUploadClick: () => void;
-  loading?: boolean;
-  instantPosition?: boolean;
-}) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const trackRef = useRef<HTMLDivElement>(null);
-  const posRef = useRef(0);
-  const navTargetRef = useRef<number | null>(null);
-  const rafRef = useRef<number | null>(null);
-  const isDragRef = useRef(false);
-  const wasDragRef = useRef(false);
-  const dragX0Ref = useRef(0);
-  const dragS0Ref = useRef(0);
-  const suppressChangeRef = useRef(false);
-  const prevIndexRef = useRef(currentIndex);
-
-  const getMax = useCallback(() => {
-    const w = containerRef.current?.offsetWidth ?? 1440;
-    return Math.max(0, cones.length * (DC + DG) - DG + DP * 2 - w);
-  }, [cones.length]);
-
-  const applyTransform = (x: number) => {
-    if (trackRef.current) trackRef.current.style.transform = `translateX(${-x}px)`;
-  };
-
-  const updateActiveIndex = useCallback((scroll: number) => {
-    if (cones.length === 0) return;
-    const w = containerRef.current?.offsetWidth ?? 1440;
-    const centerX = scroll + w / 2 - DP;
-    const idx = Math.max(0, Math.min(cones.length - 1, Math.round((centerX - DC / 2) / (DC + DG))));
-    if (idx !== prevIndexRef.current) {
-      prevIndexRef.current = idx;
-      suppressChangeRef.current = true;
-      onChange(idx);
-    }
-  }, [cones.length, onChange]);
-
-  const targetRef = useRef(0); // lerp target for wheel scroll
-
-  // Single RAF loop — lerps posRef toward targetRef (wheel) or navTargetRef (buttons)
-  const animFnRef = useRef<() => void>(() => {});
-  animFnRef.current = () => {
-    const dest = navTargetRef.current ?? targetRef.current;
-    const diff = dest - posRef.current;
-    if (Math.abs(diff) < 0.3) {
-      posRef.current = dest;
-      if (navTargetRef.current !== null) navTargetRef.current = null;
-      applyTransform(posRef.current);
-      updateActiveIndex(posRef.current);
-      rafRef.current = null;
-    } else {
-      posRef.current += diff * 0.1;
-      applyTransform(posRef.current);
-      updateActiveIndex(posRef.current);
-      rafRef.current = requestAnimationFrame(() => animFnRef.current());
-    }
-  };
-
-  const startAnim = useCallback(() => {
-    if (!rafRef.current) rafRef.current = requestAnimationFrame(() => animFnRef.current());
-  }, []);
-
-  const scrollToIndex = useCallback((idx: number, instant: boolean) => {
-    const w = containerRef.current?.offsetWidth ?? 1440;
-    const coneCenter = DP + idx * (DC + DG) + DC / 2;
-    const target = Math.max(0, Math.min(getMax(), coneCenter - w / 2));
-    if (instant) {
-      navTargetRef.current = null;
-      if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null; }
-      posRef.current = target;
-      targetRef.current = target;
-      applyTransform(target);
-    } else {
-      navTargetRef.current = target;
-      startAnim();
-    }
-  }, [getMax, startAnim]);
-
-  // Respond to external currentIndex changes (shuffle, arrows)
-  useEffect(() => {
-    if (suppressChangeRef.current) { suppressChangeRef.current = false; return; }
-    if (cones.length === 0) return;
-    if (currentIndex === prevIndexRef.current && !instantPosition) return;
-    prevIndexRef.current = currentIndex;
-    scrollToIndex(currentIndex, !!instantPosition);
-  }, [currentIndex, instantPosition, scrollToIndex, cones.length]);
-
-  // Wheel/trackpad: accumulate into targetRef with speed multiplier, lerp visual position.
-  // 2.5× multiplier makes small trackpad gestures feel light. Lerp provides smooth glide.
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const onWheel = (e: WheelEvent) => {
-      e.preventDefault();
-      navTargetRef.current = null; // cancel button-nav animation
-      const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
-      targetRef.current = Math.max(0, Math.min(getMax(), targetRef.current + delta * 2.5));
-      startAnim();
-    };
-    el.addEventListener('wheel', onWheel, { passive: false });
-    return () => el.removeEventListener('wheel', onWheel);
-  }, [cones.length, getMax, startAnim]);
-
-  const onMouseDown = (e: React.MouseEvent) => {
-    isDragRef.current = true;
-    wasDragRef.current = false;
-    dragX0Ref.current = e.clientX;
-    dragS0Ref.current = posRef.current;
-    navTargetRef.current = null;
-  };
-  const onMouseMove = (e: React.MouseEvent) => {
-    if (!isDragRef.current) return;
-    const diff = e.clientX - dragX0Ref.current;
-    if (Math.abs(diff) > 5) wasDragRef.current = true;
-    const t = Math.max(0, Math.min(getMax(), dragS0Ref.current - diff));
-    posRef.current = t;
-    applyTransform(t);
-    updateActiveIndex(t);
-  };
-  const onMouseUp = () => { isDragRef.current = false; };
-
-  const TOTAL_H = 20 + 6 + DC; // label + gap + card
-
-  if (loading) return (
-    <div className="w-full flex items-center justify-center" style={{ height: TOTAL_H }}>
-      <p className="text-[10px] uppercase text-gray-400">Loading...</p>
-    </div>
-  );
-  if (cones.length === 0) return (
-    <div className="w-full flex items-center justify-center" style={{ height: TOTAL_H }}>
-      {filter === 'mine'
-        ? <p className="text-[10px] uppercase text-black"><button type="button" onClick={onUploadClick} className="underline cursor-pointer">UPLOAD</button>{' your first cone'}</p>
-        : <p className="text-[9px] uppercase text-gray-300">No cones yet</p>}
-    </div>
-  );
-
-  return (
-    <div
-      ref={containerRef}
-      className="relative overflow-hidden select-none w-full cursor-grab active:cursor-grabbing"
-      style={{ height: TOTAL_H }}
-      onMouseDown={onMouseDown}
-      onMouseMove={onMouseMove}
-      onMouseUp={onMouseUp}
-      onMouseLeave={() => { isDragRef.current = false; }}
-    >
-      <div
-        ref={trackRef}
-        className="absolute top-0 flex items-center"
-        style={{ height: TOTAL_H, gap: DG, paddingLeft: DP, paddingRight: DP, willChange: 'transform' }}
-      >
-        {cones.map((cone, i) => (
-          <div key={cone.id} className="flex-shrink-0 flex flex-col items-start" style={{ gap: 6 }}>
-            <p className="text-[9px] uppercase leading-none" style={{ height: 20, display: 'flex', alignItems: 'center' }}>
-              ({String(i + 1).padStart(2, '0')})
-            </p>
-            <div
-              className="overflow-hidden bg-gray-50"
-              style={{ width: DC, height: DC, cursor: 'pointer' }}
-              onClick={() => { if (!wasDragRef.current) onOpenProfile(cone, i); }}
-            >
-              {cone.image_path && (
-                <img
-                  src={cone.image_path}
-                  alt={cone.description || 'Cone'}
-                  className="w-full h-full object-cover pointer-events-none"
-                  draggable={false}
-                />
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 // ── Carousel ──────────────────────────────────────────────────────────────────
 function Carousel({
   cones,
@@ -1060,7 +863,7 @@ function IndexView({
           >
             <div className="flex-1 min-w-0 space-y-0.5">
               <p className="text-[10px] text-black leading-tight">
-                ({String(i + 1).padStart(2, '0')})
+                ({String(cone.index).padStart(2, '0')})
               </p>
               <p className="text-[10px] uppercase leading-tight truncate text-black">
                 {cone.description || (cone.is_analyzed ? '—' : 'Analyzing...')}
@@ -2047,174 +1850,115 @@ export default function ConesApp() {
         ) : (
           <div
             ref={conesContentRef}
-            className="flex-1 flex flex-col py-4 overflow-hidden"
+            className="flex-1 flex flex-col justify-evenly py-4 overflow-hidden"
           >
-            {/* ── Mobile layout: info + carousel + buttons, evenly spaced ── */}
-            <div className="md:hidden flex-1 flex flex-col justify-evenly">
-              {/* Info text */}
-              <div className="flex flex-col items-center text-center px-4 space-y-0.5 leading-none [&>p]:leading-tight">
-                {infoCone ? (
-                  <>
-                    <p className="text-[9px] text-black">
-                      ({String(currentIndex + 1).padStart(2, '0')})
-                    </p>
-                    <p className="text-[10px] uppercase text-center px-4 text-black">
-                      {infoCone.description ||
-                        (infoCone.is_analyzed ? '—' : 'Analyzing...')}
-                    </p>
-                    {formattedActiveDate && (
-                      <p className="text-[10px] uppercase text-black">
-                        {formattedActiveDate}
-                      </p>
-                    )}
-                  </>
-                ) : conesLoading || displayCones.length === 0 ? null : filter === 'mine' && mineCount === 0 ? null : (
-                  <p className="text-[10px] uppercase text-black">
-                    Loading...
+            {/* Info text / last uploaded cone (no thumbnail) */}
+            <div className="flex flex-col items-center text-center px-4 space-y-0.5 leading-none [&>p]:leading-tight">
+              {infoCone ? (
+                <>
+                  <p className="text-[9px] text-black">
+                    ({String(infoCone.index).padStart(2, '0')})
                   </p>
-                )}
-              </div>
-
-              {/* Mobile carousel */}
-              <div>
-                <Carousel
-                  cones={carouselCones}
-                  currentIndex={currentIndex}
-                  onChange={setCurrentIndex}
-                  wheelDisabled={isDesktop}
-                  instantPosition={restoreInstant}
-                  onOpenProfile={(cone, index) => {
-                    if (cone.id === 'temp' && (cone as any).is_analyzed === 0 && lastUploadedCone) {
-                      setAnalyzingCone(lastUploadedCone);
-                      setActiveTab('cones');
-                      return;
-                    }
-                    sessionStorage.setItem('cones_return_index', String(index));
-                    sessionStorage.setItem('cones_return_filter', filter);
-                    sessionStorage.setItem('cones_display_list', JSON.stringify(displayCones));
-                    const urlKey = String(index + 1);
-                    sessionStorage.setItem('cones_profile_key', urlKey);
-                    sessionStorage.setItem('cones_profile_cone', JSON.stringify(cone));
-                    router.push(`/cones/${urlKey}${filter === 'mine' ? '?filter=mine' : ''}`);
-                  }}
-                  filter={filter}
-                  onUploadClick={() => fileInputRef.current?.click()}
-                  loading={conesLoading}
-                />
-              </div>
-
-              {/* Mobile shuffle + arrows */}
-              <div className="flex justify-center items-center gap-2">
-                <button
-                  type="button"
-                  aria-label="Previous cone"
-                  onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}
-                  disabled={carouselCones.length <= 1 || currentIndex === 0}
-                  className="flex w-9 h-9 rounded-full bg-white items-center justify-center text-gray-500 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                  onMouseDown={(e) => { if (e.button !== 0) return; startNavRepeat(-1); }}
-                  onMouseUp={stopNavRepeat}
-                  onMouseLeave={stopNavRepeat}
-                  onTouchStart={(e) => { e.preventDefault(); startNavRepeat(-1); }}
-                  onTouchEnd={stopNavRepeat}
-                  onTouchCancel={stopNavRepeat}
-                >
-                  <LeftArrowIcon />
-                </button>
-                {carouselCones.length > 1 ? (
-                  <button
-                    onClick={handleShuffle}
-                    className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 transition-all cursor-pointer"
-                  >
-                    <ShuffleIcon />
-                  </button>
-                ) : (
-                  <div className="w-10 h-10" />
-                )}
-                <button
-                  type="button"
-                  aria-label="Next cone"
-                  onClick={() => setCurrentIndex((i) => Math.min(carouselCones.length - 1, i + 1))}
-                  disabled={carouselCones.length <= 1 || currentIndex === carouselCones.length - 1}
-                  className="flex w-9 h-9 rounded-full bg-white items-center justify-center text-gray-500 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                  onMouseDown={(e) => { if (e.button !== 0) return; startNavRepeat(1); }}
-                  onMouseUp={stopNavRepeat}
-                  onMouseLeave={stopNavRepeat}
-                  onTouchStart={(e) => { e.preventDefault(); startNavRepeat(1); }}
-                  onTouchEnd={stopNavRepeat}
-                  onTouchCancel={stopNavRepeat}
-                >
-                  <RightArrowIcon />
-                </button>
-              </div>
+                  <p className="text-[10px] uppercase text-center px-4 text-black">
+                    {infoCone.description ||
+                      (infoCone.is_analyzed ? '—' : 'Analyzing...')}
+                  </p>
+                  {formattedActiveDate && (
+                    <p className="text-[10px] uppercase text-black">
+                      {formattedActiveDate}
+                    </p>
+                  )}
+                </>
+              ) : conesLoading || displayCones.length === 0 ? null : filter === 'mine' && mineCount === 0 ? null : (
+                <p className="text-[10px] uppercase text-black">
+                  Loading...
+                </p>
+              )}
             </div>
 
-            {/* ── Desktop layout: top half carousel, bottom half buttons ── */}
-            <div className="hidden md:flex flex-col flex-1">
-              {/* Top half: carousel vertically centered */}
-              <div className="flex-1 flex items-center">
-                <DesktopCarousel
-                  cones={carouselCones}
-                  currentIndex={currentIndex}
-                  onChange={setCurrentIndex}
-                  instantPosition={restoreInstant}
-                  onOpenProfile={(cone, index) => {
-                    if (cone.id === 'temp' && (cone as any).is_analyzed === 0 && lastUploadedCone) {
-                      setAnalyzingCone(lastUploadedCone);
-                      setActiveTab('cones');
-                      return;
-                    }
-                    sessionStorage.setItem('cones_return_index', String(index));
-                    sessionStorage.setItem('cones_return_filter', filter);
-                    sessionStorage.setItem('cones_display_list', JSON.stringify(displayCones));
-                    const urlKey = String(index + 1);
-                    sessionStorage.setItem('cones_profile_key', urlKey);
-                    sessionStorage.setItem('cones_profile_cone', JSON.stringify(cone));
-                    router.push(`/cones/${urlKey}${filter === 'mine' ? '?filter=mine' : ''}`);
-                  }}
-                  filter={filter}
-                  onUploadClick={() => fileInputRef.current?.click()}
-                  loading={conesLoading}
-                />
-              </div>
-              {/* Bottom half: shuffle + arrows vertically centered */}
-              <div className="flex-1 flex items-center justify-center">
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    aria-label="Previous cone"
-                    onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}
-                    disabled={carouselCones.length <= 1 || currentIndex === 0}
-                    className="flex w-10 h-10 rounded-full bg-white items-center justify-center text-gray-500 hover:bg-gray-50 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                    onMouseDown={(e) => { if (e.button !== 0) return; startNavRepeat(-1); }}
-                    onMouseUp={stopNavRepeat}
-                    onMouseLeave={stopNavRepeat}
-                  >
-                    <LeftArrowIcon />
-                  </button>
-                  {carouselCones.length > 1 ? (
-                    <button
-                      onClick={handleShuffle}
-                      className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200 transition-all cursor-pointer"
-                    >
-                      <ShuffleIcon />
-                    </button>
-                  ) : (
-                    <div className="w-10 h-10" />
-                  )}
-                  <button
-                    type="button"
-                    aria-label="Next cone"
-                    onClick={() => setCurrentIndex((i) => Math.min(carouselCones.length - 1, i + 1))}
-                    disabled={carouselCones.length <= 1 || currentIndex === carouselCones.length - 1}
-                    className="flex w-10 h-10 rounded-full bg-white items-center justify-center text-gray-500 hover:bg-gray-50 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                    onMouseDown={(e) => { if (e.button !== 0) return; startNavRepeat(1); }}
-                    onMouseUp={stopNavRepeat}
-                    onMouseLeave={stopNavRepeat}
-                  >
-                    <RightArrowIcon />
-                  </button>
-                </div>
-              </div>
+            {/* Carousel — full viewport width, no centering wrapper */}
+            <Carousel
+              cones={carouselCones}
+              currentIndex={currentIndex}
+              onChange={setCurrentIndex}
+              wheelDisabled={isDesktop}
+              instantPosition={restoreInstant}
+              onOpenProfile={(cone, index) => {
+                // If this is the temporary placeholder cone for an in-progress upload,
+                // re-open the analyzing screen instead of navigating to a profile page.
+                if (cone.id === 'temp' && (cone as any).is_analyzed === 0 && lastUploadedCone) {
+                  setAnalyzingCone(lastUploadedCone);
+                  setActiveTab('cones');
+                  return;
+                }
+                sessionStorage.setItem('cones_return_index', String(index));
+                sessionStorage.setItem('cones_return_filter', filter);
+                sessionStorage.setItem('cones_display_list', JSON.stringify(displayCones));
+                const urlKey = String(index + 1);
+                sessionStorage.setItem('cones_profile_key', urlKey);
+                sessionStorage.setItem('cones_profile_cone', JSON.stringify(cone));
+                router.push(`/cones/${urlKey}${filter === 'mine' ? '?filter=mine' : ''}`);
+              }}
+              filter={filter}
+              onUploadClick={() => fileInputRef.current?.click()}
+              loading={conesLoading}
+            />
+
+            {/* Shuffle button — desktop: with left/right arrows */}
+            <div className="flex justify-center items-center gap-2">
+              {/* Arrows + shuffle */}
+              <button
+                type="button"
+                aria-label="Previous cone"
+                onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}
+                disabled={carouselCones.length <= 1 || currentIndex === 0}
+                className="flex w-9 h-9 md:w-10 md:h-10 rounded-full bg-white items-center justify-center text-gray-500 md:hover:bg-gray-50 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-gray-100"
+                onMouseDown={(e) => {
+                  if (e.button !== 0) return;
+                  startNavRepeat(-1);
+                }}
+                onMouseUp={stopNavRepeat}
+                onMouseLeave={stopNavRepeat}
+                onTouchStart={(e) => {
+                  e.preventDefault();
+                  startNavRepeat(-1);
+                }}
+                onTouchEnd={stopNavRepeat}
+                onTouchCancel={stopNavRepeat}
+              >
+                <LeftArrowIcon />
+              </button>
+              {carouselCones.length > 1 ? (
+                <button
+                  onClick={handleShuffle}
+                  className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 md:hover:bg-gray-200 transition-all cursor-pointer"
+                >
+                  <ShuffleIcon />
+                </button>
+              ) : (
+                <div className="w-10 h-10" />
+              )}
+              <button
+                type="button"
+                aria-label="Next cone"
+                onClick={() => setCurrentIndex((i) => Math.min(carouselCones.length - 1, i + 1))}
+                disabled={carouselCones.length <= 1 || currentIndex === carouselCones.length - 1}
+                className="flex w-9 h-9 md:w-10 md:h-10 rounded-full bg-white items-center justify-center text-gray-500 md:hover:bg-gray-50 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-gray-100"
+                onMouseDown={(e) => {
+                  if (e.button !== 0) return;
+                  startNavRepeat(1);
+                }}
+                onMouseUp={stopNavRepeat}
+                onMouseLeave={stopNavRepeat}
+                onTouchStart={(e) => {
+                  e.preventDefault();
+                  startNavRepeat(1);
+                }}
+                onTouchEnd={stopNavRepeat}
+                onTouchCancel={stopNavRepeat}
+              >
+                <RightArrowIcon />
+              </button>
             </div>
           </div>
         )}

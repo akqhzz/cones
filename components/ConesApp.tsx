@@ -99,27 +99,28 @@ function DesktopCarousel({
     }
   }, [cones.length, onChange]);
 
-  // RAF loop — only for button/shuffle navigation (lerp to target).
-  // Scroll/trackpad is applied directly; no RAF needed for those.
+  const targetRef = useRef(0); // lerp target for wheel scroll
+
+  // Single RAF loop — lerps posRef toward targetRef (wheel) or navTargetRef (buttons)
   const animFnRef = useRef<() => void>(() => {});
   animFnRef.current = () => {
-    if (navTargetRef.current === null) { rafRef.current = null; return; }
-    const diff = navTargetRef.current - posRef.current;
-    if (Math.abs(diff) < 0.5) {
-      posRef.current = navTargetRef.current;
-      navTargetRef.current = null;
+    const dest = navTargetRef.current ?? targetRef.current;
+    const diff = dest - posRef.current;
+    if (Math.abs(diff) < 0.3) {
+      posRef.current = dest;
+      if (navTargetRef.current !== null) navTargetRef.current = null;
       applyTransform(posRef.current);
       updateActiveIndex(posRef.current);
       rafRef.current = null;
     } else {
-      posRef.current += diff * 0.15;
+      posRef.current += diff * 0.1;
       applyTransform(posRef.current);
       updateActiveIndex(posRef.current);
       rafRef.current = requestAnimationFrame(() => animFnRef.current());
     }
   };
 
-  const startNavAnim = useCallback(() => {
+  const startAnim = useCallback(() => {
     if (!rafRef.current) rafRef.current = requestAnimationFrame(() => animFnRef.current());
   }, []);
 
@@ -131,12 +132,13 @@ function DesktopCarousel({
       navTargetRef.current = null;
       if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null; }
       posRef.current = target;
+      targetRef.current = target;
       applyTransform(target);
     } else {
       navTargetRef.current = target;
-      startNavAnim();
+      startAnim();
     }
-  }, [getMax, startNavAnim]);
+  }, [getMax, startAnim]);
 
   // Respond to external currentIndex changes (shuffle, arrows)
   useEffect(() => {
@@ -147,27 +149,21 @@ function DesktopCarousel({
     scrollToIndex(currentIndex, !!instantPosition);
   }, [currentIndex, instantPosition, scrollToIndex, cones.length]);
 
-  // Wheel/trackpad: apply delta directly — no velocity accumulation, no RAF lag.
-  // The OS already provides momentum deceleration for trackpad; we don't need our own.
+  // Wheel/trackpad: accumulate into targetRef with speed multiplier, lerp visual position.
+  // 2.5× multiplier makes small trackpad gestures feel light. Lerp provides smooth glide.
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
-      // Cancel any in-progress button-nav animation
-      if (navTargetRef.current !== null) {
-        navTargetRef.current = null;
-        if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null; }
-      }
+      navTargetRef.current = null; // cancel button-nav animation
       const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
-      const newPos = Math.max(0, Math.min(getMax(), posRef.current + delta));
-      posRef.current = newPos;
-      applyTransform(newPos);
-      updateActiveIndex(newPos);
+      targetRef.current = Math.max(0, Math.min(getMax(), targetRef.current + delta * 2.5));
+      startAnim();
     };
     el.addEventListener('wheel', onWheel, { passive: false });
     return () => el.removeEventListener('wheel', onWheel);
-  }, [cones.length, getMax, updateActiveIndex]);
+  }, [cones.length, getMax, startAnim]);
 
   const onMouseDown = (e: React.MouseEvent) => {
     isDragRef.current = true;
@@ -2080,30 +2076,32 @@ export default function ConesApp() {
               </div>
 
               {/* Mobile carousel */}
-              <Carousel
-                cones={carouselCones}
-                currentIndex={currentIndex}
-                onChange={setCurrentIndex}
-                wheelDisabled={isDesktop}
-                instantPosition={restoreInstant}
-                onOpenProfile={(cone, index) => {
-                  if (cone.id === 'temp' && (cone as any).is_analyzed === 0 && lastUploadedCone) {
-                    setAnalyzingCone(lastUploadedCone);
-                    setActiveTab('cones');
-                    return;
-                  }
-                  sessionStorage.setItem('cones_return_index', String(index));
-                  sessionStorage.setItem('cones_return_filter', filter);
-                  sessionStorage.setItem('cones_display_list', JSON.stringify(displayCones));
-                  const urlKey = String(index + 1);
-                  sessionStorage.setItem('cones_profile_key', urlKey);
-                  sessionStorage.setItem('cones_profile_cone', JSON.stringify(cone));
-                  router.push(`/cones/${urlKey}${filter === 'mine' ? '?filter=mine' : ''}`);
-                }}
-                filter={filter}
-                onUploadClick={() => fileInputRef.current?.click()}
-                loading={conesLoading}
-              />
+              <div>
+                <Carousel
+                  cones={carouselCones}
+                  currentIndex={currentIndex}
+                  onChange={setCurrentIndex}
+                  wheelDisabled={isDesktop}
+                  instantPosition={restoreInstant}
+                  onOpenProfile={(cone, index) => {
+                    if (cone.id === 'temp' && (cone as any).is_analyzed === 0 && lastUploadedCone) {
+                      setAnalyzingCone(lastUploadedCone);
+                      setActiveTab('cones');
+                      return;
+                    }
+                    sessionStorage.setItem('cones_return_index', String(index));
+                    sessionStorage.setItem('cones_return_filter', filter);
+                    sessionStorage.setItem('cones_display_list', JSON.stringify(displayCones));
+                    const urlKey = String(index + 1);
+                    sessionStorage.setItem('cones_profile_key', urlKey);
+                    sessionStorage.setItem('cones_profile_cone', JSON.stringify(cone));
+                    router.push(`/cones/${urlKey}${filter === 'mine' ? '?filter=mine' : ''}`);
+                  }}
+                  filter={filter}
+                  onUploadClick={() => fileInputRef.current?.click()}
+                  loading={conesLoading}
+                />
+              </div>
 
               {/* Mobile shuffle + arrows */}
               <div className="flex justify-center items-center gap-2">

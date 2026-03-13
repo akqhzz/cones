@@ -2102,7 +2102,7 @@ export default function ConesApp() {
             />
 
             {/* Shuffle button — desktop: with left/right arrows */}
-            <div className="flex justify-center items-center gap-2 md:mt-40">
+            <div className="flex justify-center items-center gap-2 md:mt-72">
               {/* Arrows + shuffle */}
               <button
                 type="button"

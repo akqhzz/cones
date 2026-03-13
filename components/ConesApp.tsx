@@ -2047,7 +2047,7 @@ export default function ConesApp() {
         ) : (
           <div
             ref={conesContentRef}
-            className="flex-1 flex flex-col py-4 overflow-hidden justify-evenly md:justify-center"
+            className="flex-1 flex flex-col py-4 overflow-hidden justify-evenly md:justify-center md:relative"
           >
             {/* Info text / last uploaded cone (no thumbnail) — hide on desktop */}
             <div className="flex flex-col items-center text-center px-4 space-y-0.5 leading-none [&>p]:leading-tight md:hidden">
@@ -2102,7 +2102,7 @@ export default function ConesApp() {
             />
 
             {/* Shuffle button — desktop: with left/right arrows */}
-            <div className="flex justify-center items-center gap-2 md:mt-72">
+            <div className="flex justify-center items-center gap-2 md:absolute md:bottom-8 md:left-0 md:right-0">
               {/* Arrows + shuffle */}
               <button
                 type="button"

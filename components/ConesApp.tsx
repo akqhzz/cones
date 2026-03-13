@@ -25,6 +25,24 @@ function ShuffleIcon() {
     </svg>
   );
 }
+function SortAscIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="3" y1="6" x2="21" y2="6" />
+      <line x1="3" y1="12" x2="14" y2="12" />
+      <line x1="3" y1="18" x2="7" y2="18" />
+    </svg>
+  );
+}
+function SortDescIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="3" y1="6" x2="7" y2="6" />
+      <line x1="3" y1="12" x2="14" y2="12" />
+      <line x1="3" y1="18" x2="21" y2="18" />
+    </svg>
+  );
+}
 
 // ── Carousel nav arrows (desktop) ─────────────────────────────────────────────
 function LeftArrowIcon() {
@@ -1021,6 +1039,7 @@ export default function ConesApp() {
   const undoStackRef = useRef<Cone[]>([]);
   const redoStackRef = useRef<Cone[]>([]);
   const pendingRestoreIndexRef = useRef<number | null>(null);
+  const pendingRestoreSortRef = useRef<{ mode: SortMode; order?: string[] } | null>(null);
   const hasCachedConesRef = useRef(false);
   const isCroppingRef = useRef(false);
   const [restoreInstant, setRestoreInstant] = useState(false);
@@ -1065,9 +1084,19 @@ export default function ConesApp() {
         if (returnScroll != null) {
           pendingRestoreScrollRef.current = parseFloat(returnScroll);
         }
+        const savedSortMode = sessionStorage.getItem('cones_sort_mode') as SortMode | null;
+        const savedSortOrder = sessionStorage.getItem('cones_sort_order');
+        if (savedSortMode) {
+          pendingRestoreSortRef.current = {
+            mode: savedSortMode,
+            order: savedSortOrder ? JSON.parse(savedSortOrder) : undefined,
+          };
+        }
         sessionStorage.removeItem('cones_return_index');
         sessionStorage.removeItem('cones_return_filter');
         sessionStorage.removeItem('cones_return_scroll');
+        sessionStorage.removeItem('cones_sort_mode');
+        sessionStorage.removeItem('cones_sort_order');
       }
       // If we just deleted a cone in profile view, seed undo stack and show toast
       const lastDeletedRaw = sessionStorage.getItem('cones_last_deleted_cone');
@@ -1183,8 +1212,21 @@ export default function ConesApp() {
     return displayCones;
   }, [displayCones, isUploading, lastUploadedCone]);
 
+  type SortMode = 'asc' | 'desc' | 'random';
+  const [sortMode, setSortMode] = useState<SortMode>('asc');
+  const [randomOrder, setRandomOrder] = useState<Cone[]>([]);
+
+  const visibleCones = useMemo(() => {
+    if (sortMode === 'desc') return [...carouselCones].reverse();
+    if (sortMode === 'random') return randomOrder.length === carouselCones.length ? randomOrder : carouselCones;
+    return carouselCones;
+  }, [sortMode, carouselCones, randomOrder]);
+
   useEffect(() => {
     if (sessionId) fetchCones(filter, sessionId);
+    // Reset sort order when filter/session changes, but not when returning from a profile
+    // (in that case pendingRestoreSortRef holds the order to restore)
+    if (!pendingRestoreSortRef.current) setSortMode('asc');
   }, [sessionId, filter, fetchCones]);
 
   // Restore carousel index/scroll when returning from cone profile (after cones are loaded)
@@ -1220,6 +1262,20 @@ export default function ConesApp() {
           }
         }
         pendingRestoreScrollRef.current = null;
+      }
+
+      // Restore sort mode/order
+      const pendingSort = pendingRestoreSortRef.current;
+      if (pendingSort) {
+        pendingRestoreSortRef.current = null;
+        if (pendingSort.mode === 'random' && pendingSort.order) {
+          const idOrder = pendingSort.order;
+          const sorted = idOrder
+            .map((id) => displayCones.find((c) => c.id === id))
+            .filter((c): c is Cone => c != null);
+          if (sorted.length === displayCones.length) setRandomOrder(sorted);
+        }
+        setSortMode(pendingSort.mode);
       }
     }
   }, [displayCones.length]);
@@ -1794,13 +1850,24 @@ export default function ConesApp() {
   );
 
   const handleShuffle = () => {
-    if (displayCones.length === 0) return;
-    let newIdx = currentIndex;
-    while (newIdx === currentIndex && displayCones.length > 1) {
-      newIdx = Math.floor(Math.random() * displayCones.length);
-    }
-    setCurrentIndex(newIdx);
-    scrollDesktopCarouselToIndex(newIdx, { smooth: true });
+    if (carouselCones.length === 0) return;
+    setSortMode((prev) => {
+      let next: SortMode;
+      if (prev === 'asc') next = 'desc';
+      else if (prev === 'desc') {
+        // Compute random order now
+        const arr = [...carouselCones];
+        for (let i = arr.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        setRandomOrder(arr);
+        next = 'random';
+      } else next = 'asc';
+      setCurrentIndex(0);
+      scrollDesktopCarouselToIndex(0, { smooth: false });
+      return next;
+    });
   };
 
   const startNavRepeat = (dir: -1 | 1) => {
@@ -1809,7 +1876,7 @@ export default function ConesApp() {
       navRepeatTimeoutRef.current = null;
       navRepeatIntervalRef.current = window.setInterval(() => {
         setCurrentIndex((i) =>
-          dir < 0 ? Math.max(0, i - 1) : Math.min(displayCones.length - 1, i + 1)
+          dir < 0 ? Math.max(0, i - 1) : Math.min(visibleCones.length - 1, i + 1)
         );
       }, 120);
     }, 280);
@@ -1826,7 +1893,7 @@ export default function ConesApp() {
     }
   };
 
-  const activeCone = carouselCones[currentIndex] ?? null;
+  const activeCone = visibleCones[currentIndex] ?? null;
   const infoCone = lastUploadedCone ?? activeCone;
 
   const formattedActiveDate = activeCone?.created_at
@@ -2076,7 +2143,7 @@ export default function ConesApp() {
             {/* Carousel — full viewport width, no centering wrapper */}
             <div className="md:-mt-24">
             <Carousel
-              cones={carouselCones}
+              cones={visibleCones}
               currentIndex={currentIndex}
               onChange={setCurrentIndex}
               wheelDisabled={isDesktop}
@@ -2095,6 +2162,8 @@ export default function ConesApp() {
                 const urlKey = String(index + 1);
                 sessionStorage.setItem('cones_profile_key', urlKey);
                 sessionStorage.setItem('cones_profile_cone', JSON.stringify(cone));
+                sessionStorage.setItem('cones_sort_mode', sortMode);
+                if (sortMode === 'random') sessionStorage.setItem('cones_sort_order', JSON.stringify(randomOrder.map((c) => c.id)));
                 router.push(`/cones/${urlKey}${filter === 'mine' ? '?filter=mine' : ''}`);
               }}
               filter={filter}
@@ -2104,7 +2173,7 @@ export default function ConesApp() {
             </div>
 
             {/* Shuffle button — desktop: with left/right arrows */}
-            <div className="flex justify-center items-center gap-2 md:absolute md:bottom-8 md:left-0 md:right-0">
+            <div className="flex justify-center items-center gap-2 md:absolute md:bottom-40 md:left-0 md:right-0">
               {/* Arrows + shuffle */}
               <button
                 type="button"
@@ -2127,7 +2196,7 @@ export default function ConesApp() {
                     setCurrentIndex((i) => Math.max(0, i - 1));
                   }
                 }}
-                disabled={carouselCones.length <= 1 || currentIndex === 0}
+                disabled={visibleCones.length <= 1 || currentIndex === 0}
                 className="flex w-9 h-9 md:w-10 md:h-10 rounded-full bg-white items-center justify-center text-gray-500 md:hover:bg-gray-50 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-gray-100"
                 onMouseDown={(e) => {
                   if (e.button !== 0) return;
@@ -2144,12 +2213,12 @@ export default function ConesApp() {
               >
                 <LeftArrowIcon />
               </button>
-              {carouselCones.length > 1 ? (
+              {visibleCones.length > 1 ? (
                 <button
                   onClick={handleShuffle}
-                  className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 md:hover:bg-gray-200 transition-all cursor-pointer"
+                  className="w-10 h-10 flex items-center justify-center text-gray-500 md:hover:text-gray-800 transition-colors cursor-pointer"
                 >
-                  <ShuffleIcon />
+                  {sortMode === 'asc' ? <SortAscIcon /> : sortMode === 'desc' ? <SortDescIcon /> : <ShuffleIcon />}
                 </button>
               ) : (
                 <div className="w-10 h-10" />
@@ -2166,14 +2235,14 @@ export default function ConesApp() {
                     const visibleIdx = stride > 0
                       ? Math.round((carousel?.scrollLeft ?? 0) / stride)
                       : currentIndex;
-                    const next = Math.min(carouselCones.length - 1, visibleIdx + 1);
+                    const next = Math.min(visibleCones.length - 1, visibleIdx + 1);
                     setCurrentIndex(next);
                     scrollDesktopCarouselToIndex(next, { smooth: true });
                   } else {
-                    setCurrentIndex((i) => Math.min(carouselCones.length - 1, i + 1));
+                    setCurrentIndex((i) => Math.min(visibleCones.length - 1, i + 1));
                   }
                 }}
-                disabled={carouselCones.length <= 1 || currentIndex === carouselCones.length - 1}
+                disabled={visibleCones.length <= 1 || currentIndex === visibleCones.length - 1}
                 className="flex w-9 h-9 md:w-10 md:h-10 rounded-full bg-white items-center justify-center text-gray-500 md:hover:bg-gray-50 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-gray-100"
                 onMouseDown={(e) => {
                   if (e.button !== 0) return;

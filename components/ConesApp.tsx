@@ -90,17 +90,22 @@ function Carousel({
   }, [containerWidth]);
   const isDesktop = containerWidth >= 768;
   const GAP = isDesktop ? GAP_DESKTOP : GAP_MOBILE;
+  const desktopCardSize = Math.round(ITEM_W * 1.38);
 
-  // Center cone scale: on desktop make only the center bigger; mobile keeps 1.38
-  const centerScale = isDesktop ? 2.2 : 1.38;
-  // Card size by distance from active index — center larger; all non-center cards same smaller size (squares)
+  // Center cone scale: used for mobile; on desktop all cones share the same size
+  const centerScale = isDesktop ? 1 : 1.38;
+  // Card size: on desktop make all cards the same size as the center;
+  // on mobile, keep a larger center cone and smaller side cones.
   const getCardSize = useCallback(
     (i: number) => {
+      if (isDesktop) {
+        return desktopCardSize;
+      }
       const d = Math.abs(i - currentIndex);
       if (d === 0) return Math.round(ITEM_W * centerScale);
       return Math.round(ITEM_W * 0.62);
     },
-    [currentIndex, ITEM_W, centerScale]
+    [currentIndex, desktopCardSize, centerScale, isDesktop]
   );
 
   // Translate so the active card is centered
@@ -124,9 +129,9 @@ function Carousel({
     return () => ro.disconnect();
   }, []);
 
-  // Smooth trackpad / wheel scrolling
+  // Smooth trackpad / wheel scrolling (desktop uses global handler; this is primarily for mobile/tablet)
   useEffect(() => {
-    if (wheelDisabled) return;
+    if (wheelDisabled || isDesktop) return;
     const el = containerRef.current;
     if (!el || cones.length === 0) return;
 
@@ -171,6 +176,7 @@ function Carousel({
   }, [currentIndex, cones.length, onChange, wheelDisabled]);
 
   const getOpacity = (i: number) => {
+    if (isDesktop) return 1;
     const d = Math.abs(i - currentIndex);
     // Keep all cones visible in viewport: gentle fade, minimum 0.5
     if (d > 4) return 0.5;
@@ -227,21 +233,51 @@ function Carousel({
 
   // Container always renders with the ref so ResizeObserver can measure correctly.
   // Empty state is rendered inside rather than as an early return.
-  const centerSize = Math.round(ITEM_W * centerScale);
-  const containerH = centerSize + 20;
+  const centerSize = isDesktop ? desktopCardSize : Math.round(ITEM_W * centerScale);
+  // Add a bit of extra height on desktop so the index label above each cone isn't clipped.
+  const containerH = centerSize + (isDesktop ? 32 : 20);
+
+  // Desktop: keep currentIndex in sync with smooth horizontal scroll position
+  const handleDesktopScroll = useCallback(() => {
+    if (!isDesktop) return;
+    const el = containerRef.current;
+    if (!el || cones.length === 0) return;
+    const cardStride = desktopCardSize + GAP;
+    if (cardStride <= 0) return;
+
+    const maxScroll = el.scrollWidth - el.clientWidth;
+    const atEnd = el.scrollLeft >= maxScroll - 1;
+    // If we are close enough to the end, clamp index to the last cone so
+    // the ">" arrow immediately reflects that we can't scroll further.
+    if (atEnd && currentIndex !== cones.length - 1) {
+      onChange(cones.length - 1);
+      return;
+    }
+
+    const approx = Math.round(el.scrollLeft / cardStride);
+    const clamped = Math.min(cones.length - 1, Math.max(0, approx));
+    if (clamped !== currentIndex) {
+      onChange(clamped);
+    }
+  }, [isDesktop, cones.length, desktopCardSize, GAP, currentIndex, onChange]);
 
   return (
     <div
       ref={containerRef}
       data-carousel-root="1"
-      className="relative overflow-hidden select-none w-full touch-pan-y"
-      style={{ height: `${containerH}px`, touchAction: 'pan-y' }}
+      className={`relative select-none w-full touch-pan-y ${
+        isDesktop ? 'overflow-x-auto overflow-y-hidden md:[&::-webkit-scrollbar]:hidden md:[scrollbar-width:none]' : 'overflow-hidden'
+      }`}
+      style={{ height: `${containerH}px`, touchAction: isDesktop ? 'auto' : 'pan-y' }}
+      onScroll={isDesktop ? handleDesktopScroll : undefined}
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
-      onMouseDown={cones.length > 0 ? onMouseDown : undefined}
-      onMouseMove={cones.length > 0 ? onMouseMove : undefined}
-      onMouseUp={cones.length > 0 ? onMouseUp : undefined}
-      onMouseLeave={() => { isDragging.current = false; }}
+      onMouseDown={cones.length > 0 && !isDesktop ? onMouseDown : undefined}
+      onMouseMove={cones.length > 0 && !isDesktop ? onMouseMove : undefined}
+      onMouseUp={cones.length > 0 && !isDesktop ? onMouseUp : undefined}
+      onMouseLeave={() => {
+        isDragging.current = false;
+      }}
     >
       {loading ? (
         <div className="flex items-center justify-center h-full">
@@ -266,6 +302,70 @@ function Carousel({
             <p className="text-[9px] uppercase text-gray-300">No cones yet</p>
           </div>
         )
+      ) : isDesktop ? (
+        <div
+          className="flex items-center h-full cursor-pointer"
+          style={{ gap: GAP, paddingLeft: 20, paddingRight: 0 }}
+        >
+          {cones.map((cone, i) => {
+            const size = getCardSize(i);
+            const opacity = getOpacity(i);
+            const isActive = i === currentIndex;
+            const isPlaceholder = cone.id === 'temp' && (cone as any).is_analyzed === 0;
+
+            return (
+              <div
+                key={cone.id}
+                data-carousel-item={i}
+                className="flex-shrink-0 group"
+                style={{
+                  width: size,
+                  height: size,
+                  opacity,
+                  cursor: 'pointer',
+                  zIndex: isActive ? 10 : 1,
+                  position: 'relative',
+                }}
+                onClick={() => {
+                  if (isPlaceholder) {
+                    onOpenProfile(cone, i);
+                  } else if (isDesktop) {
+                    // Desktop: clicking any cone immediately opens its profile,
+                    // and preserve the current scroll position for when we return.
+                    const el = containerRef.current;
+                    if (el) {
+                      sessionStorage.setItem('cones_return_scroll', String(el.scrollLeft));
+                    }
+                    onOpenProfile(cone, i);
+                  } else if (isActive) {
+                    onOpenProfile(cone, i);
+                  } else {
+                    onChange(i);
+                  }
+                }}
+              >
+                {/* Desktop: cone index label above top-left corner, e.g. (01) */}
+                <span className="hidden md:block absolute -top-4 left-0 text-[9px] text-black">
+                  ({String(cone.index).padStart(2, '0')})
+                </span>
+                <div className="w-full h-full overflow-hidden bg-gray-50 relative">
+                  {cone.image_path && (
+                    <img
+                      src={cone.image_path}
+                      alt={cone.description || 'Cone'}
+                      className="w-full h-full object-cover pointer-events-none"
+                      draggable={false}
+                    />
+                  )}
+                  {/* Desktop hover overlay: very slight white tint */}
+                  <div className="hidden md:block absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none" />
+                </div>
+              </div>
+            );
+          })}
+          {/* Desktop spacer so the last cone doesn't stick to the right edge */}
+          <div style={{ width: 40, height: desktopCardSize, flexShrink: 0 }} />
+        </div>
       ) : (
         <div
           className="absolute inset-y-0 flex items-center cursor-grab active:cursor-grabbing"
@@ -953,6 +1053,7 @@ export default function ConesApp() {
       const returnIndex = sessionStorage.getItem('cones_return_index');
       const returnFilter = sessionStorage.getItem('cones_return_filter');
       const returnView = sessionStorage.getItem('cones_return_view');
+      const returnScroll = sessionStorage.getItem('cones_return_scroll');
       if (returnIndex != null && returnFilter) {
         setFilter(returnFilter as 'all' | 'mine');
         pendingRestoreIndexRef.current = parseInt(returnIndex, 10);
@@ -961,8 +1062,12 @@ export default function ConesApp() {
           setReturnScrollIndex(parseInt(returnIndex, 10));
           sessionStorage.removeItem('cones_return_view');
         }
+        if (returnScroll != null) {
+          pendingRestoreScrollRef.current = parseFloat(returnScroll);
+        }
         sessionStorage.removeItem('cones_return_index');
         sessionStorage.removeItem('cones_return_filter');
+        sessionStorage.removeItem('cones_return_scroll');
       }
       // If we just deleted a cone in profile view, seed undo stack and show toast
       const lastDeletedRaw = sessionStorage.getItem('cones_last_deleted_cone');
@@ -1001,7 +1106,8 @@ export default function ConesApp() {
             );
             setCurrentIndex(idx);
             setRestoreInstant(true);
-            pendingRestoreIndexRef.current = null;
+            // Don't clear pendingRestoreIndexRef here — let useEffect([displayCones.length])
+            // handle the desktop scroll restore after the carousel DOM is committed.
           }
         }
       } catch {
@@ -1062,6 +1168,7 @@ export default function ConesApp() {
     () => cones.filter((c) => !c.is_impostor),
     [cones]
   );
+  const pendingRestoreScrollRef = useRef<number | null>(null);
 
   // When uploading a new cone and analysis is in progress (or the analyzing screen was closed),
   // append a placeholder cone at the end of the carousel so it can be centered and re-opened.
@@ -1080,7 +1187,7 @@ export default function ConesApp() {
     if (sessionId) fetchCones(filter, sessionId);
   }, [sessionId, filter, fetchCones]);
 
-  // Restore carousel index when returning from cone profile (after cones are loaded)
+  // Restore carousel index/scroll when returning from cone profile (after cones are loaded)
   useEffect(() => {
     if (displayCones.length > 0 && pendingRestoreIndexRef.current !== null) {
       const idx = Math.min(
@@ -1090,6 +1197,30 @@ export default function ConesApp() {
       setCurrentIndex(idx);
       setRestoreInstant(true);
       pendingRestoreIndexRef.current = null;
+
+      // Desktop: if we captured an exact scrollLeft before navigating to profile,
+      // restore that precise scroll position; otherwise fall back to aligning
+      // based on the restored index.
+      if (typeof window !== 'undefined' && window.innerWidth >= 768) {
+        const carousel = document.querySelector<HTMLElement>('[data-carousel-root="1"]');
+        if (carousel) {
+          const saved = pendingRestoreScrollRef.current;
+          if (typeof saved === 'number' && !Number.isNaN(saved)) {
+            carousel.scrollLeft = saved;
+          } else {
+            const first = carousel.querySelector<HTMLElement>('[data-carousel-item="0"]');
+            const second = carousel.querySelector<HTMLElement>('[data-carousel-item="1"]');
+            let cardStride = first?.offsetWidth ?? 0;
+            if (first && second) {
+              cardStride = second.offsetLeft - first.offsetLeft;
+            }
+            if (cardStride > 0) {
+              carousel.scrollLeft = idx * cardStride;
+            }
+          }
+        }
+        pendingRestoreScrollRef.current = null;
+      }
     }
   }, [displayCones.length]);
 
@@ -1103,12 +1234,31 @@ export default function ConesApp() {
   // Cones tab: capture horizontal wheel/touch on whole area — move carousel, prevent browser back/forward
   useEffect(() => {
     if (activeTab !== 'cones') return;
-    const SNAP_COOLDOWN = 800; // gesture reset window; no delay before first step
+    const SNAP_COOLDOWN = 900; // treat the entire swipe gesture (even long ones) as a single step
     const THRESHOLD = 0.5; // treat even very light horizontal swipe as intent to move
 
     const handleWheel = (e: WheelEvent) => {
       if (!isDesktop) return;
       if (isCroppingRef.current) return;
+
+      const primaryDelta =
+        Math.abs(e.deltaX) >= Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+      if (Math.abs(primaryDelta) < THRESHOLD) return;
+
+      // In desktop list view, map any swipe (horizontal or vertical) anywhere on the
+      // page to smooth horizontal scroll on the carousel instead of index-stepping.
+      if (viewMode === 'list') {
+        const carousel = document.querySelector<HTMLElement>('[data-carousel-root=\"1\"]');
+        if (!carousel) return;
+        e.preventDefault();
+        e.stopPropagation();
+        // Use the dominant wheel axis to drive horizontal scroll.
+        carousel.scrollLeft += primaryDelta;
+        return;
+      }
+
+      // In other desktop views, only react to clearly horizontal gestures and keep
+      // discrete index steps.
       const isHorizontal =
         Math.abs(e.deltaX) >= Math.abs(e.deltaY) || Math.abs(e.deltaX) > 1;
       if (!isHorizontal) return;
@@ -1119,10 +1269,7 @@ export default function ConesApp() {
       if (pageSteppedRef.current) return;
 
       const now = Date.now();
-      const delta = Math.abs(e.deltaX) >= Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
-      if (Math.abs(delta) < THRESHOLD) return;
-
-      const dir = delta > 0 ? 1 : -1;
+      const dir = primaryDelta > 0 ? 1 : -1;
       setCurrentIndex((i) =>
         Math.min(displayCones.length - 1, Math.max(0, i + dir))
       );
@@ -1300,6 +1447,10 @@ export default function ConesApp() {
           sessionStorage.setItem('cones_return_filter', 'mine');
           if (viewMode === 'index') {
             sessionStorage.setItem('cones_return_view', 'index');
+          }
+          const carousel = document.querySelector<HTMLElement>('[data-carousel-root=\"1\"]');
+          if (carousel) {
+            sessionStorage.setItem('cones_return_scroll', String(carousel.scrollLeft));
           }
           router.push(`/cones/${urlKey}?filter=mine`);
         }
@@ -1601,6 +1752,47 @@ export default function ConesApp() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [handleUndo, handleRedo]);
 
+  const scrollDesktopCarouselToIndex = useCallback(
+    (idx: number, { smooth }: { smooth?: boolean } = {}) => {
+      if (typeof window === 'undefined' || window.innerWidth < 768) return;
+      const el = document.querySelector<HTMLElement>('[data-carousel-root="1"]');
+      if (!el) return;
+      const first = el.querySelector<HTMLElement>('[data-carousel-item="0"]');
+      const second = el.querySelector<HTMLElement>('[data-carousel-item="1"]');
+      let cardStride = first?.offsetWidth ?? 0;
+      if (first && second) {
+        cardStride = second.offsetLeft - first.offsetLeft;
+      }
+      if (!cardStride) return;
+      // Padding on the inner flex container already gives us the 20px left inset.
+      // So aligning index 0 to scrollLeft = 0 keeps that 20px gap at the start.
+      const target = idx * cardStride;
+      if (!smooth) {
+        el.scrollLeft = target;
+        return;
+      }
+      const start = el.scrollLeft;
+      const distance = target - start;
+      const duration = 420; // ms
+      const startTime = performance.now();
+
+      const ease = (t: number) =>
+        t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+      const step = (now: number) => {
+        const elapsed = now - startTime;
+        const t = Math.min(1, elapsed / duration);
+        el.scrollLeft = start + distance * ease(t);
+        if (t < 1) {
+          requestAnimationFrame(step);
+        }
+      };
+
+      requestAnimationFrame(step);
+    },
+    []
+  );
+
   const handleShuffle = () => {
     if (displayCones.length === 0) return;
     let newIdx = currentIndex;
@@ -1608,6 +1800,7 @@ export default function ConesApp() {
       newIdx = Math.floor(Math.random() * displayCones.length);
     }
     setCurrentIndex(newIdx);
+    scrollDesktopCarouselToIndex(newIdx, { smooth: true });
   };
 
   const startNavRepeat = (dir: -1 | 1) => {
@@ -1844,16 +2037,20 @@ export default function ConesApp() {
               const urlKey = String(index + 1);
               sessionStorage.setItem('cones_profile_key', urlKey);
               sessionStorage.setItem('cones_profile_cone', JSON.stringify(cone));
+              const carousel = document.querySelector<HTMLElement>('[data-carousel-root=\"1\"]');
+              if (carousel) {
+                sessionStorage.setItem('cones_return_scroll', String(carousel.scrollLeft));
+              }
               router.push(`/cones/${urlKey}${filter === 'mine' ? '?filter=mine' : ''}`);
             }}
           />
         ) : (
           <div
             ref={conesContentRef}
-            className="flex-1 flex flex-col justify-evenly py-4 overflow-hidden"
+            className="flex-1 flex flex-col py-4 overflow-hidden justify-evenly md:justify-center"
           >
-            {/* Info text / last uploaded cone (no thumbnail) */}
-            <div className="flex flex-col items-center text-center px-4 space-y-0.5 leading-none [&>p]:leading-tight">
+            {/* Info text / last uploaded cone (no thumbnail) — hide on desktop */}
+            <div className="flex flex-col items-center text-center px-4 space-y-0.5 leading-none [&>p]:leading-tight md:hidden">
               {infoCone ? (
                 <>
                   <p className="text-[9px] text-black">
@@ -1905,12 +2102,20 @@ export default function ConesApp() {
             />
 
             {/* Shuffle button — desktop: with left/right arrows */}
-            <div className="flex justify-center items-center gap-2">
+            <div className="flex justify-center items-center gap-2 md:mt-40">
               {/* Arrows + shuffle */}
               <button
                 type="button"
                 aria-label="Previous cone"
-                onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}
+                onClick={() => {
+                  if (isDesktop) {
+                    const next = Math.max(0, currentIndex - 1);
+                    setCurrentIndex(next);
+                    scrollDesktopCarouselToIndex(next, { smooth: true });
+                  } else {
+                    setCurrentIndex((i) => Math.max(0, i - 1));
+                  }
+                }}
                 disabled={carouselCones.length <= 1 || currentIndex === 0}
                 className="flex w-9 h-9 md:w-10 md:h-10 rounded-full bg-white items-center justify-center text-gray-500 md:hover:bg-gray-50 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-gray-100"
                 onMouseDown={(e) => {
@@ -1941,7 +2146,15 @@ export default function ConesApp() {
               <button
                 type="button"
                 aria-label="Next cone"
-                onClick={() => setCurrentIndex((i) => Math.min(carouselCones.length - 1, i + 1))}
+                onClick={() => {
+                  if (isDesktop) {
+                    const next = Math.min(carouselCones.length - 1, currentIndex + 1);
+                    setCurrentIndex(next);
+                    scrollDesktopCarouselToIndex(next, { smooth: true });
+                  } else {
+                    setCurrentIndex((i) => Math.min(carouselCones.length - 1, i + 1));
+                  }
+                }}
                 disabled={carouselCones.length <= 1 || currentIndex === carouselCones.length - 1}
                 className="flex w-9 h-9 md:w-10 md:h-10 rounded-full bg-white items-center justify-center text-gray-500 md:hover:bg-gray-50 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-gray-100"
                 onMouseDown={(e) => {

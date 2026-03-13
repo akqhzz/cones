@@ -43,8 +43,8 @@ function RightArrowIcon() {
 }
 
 // ── Desktop smooth-scroll carousel ────────────────────────────────────────────
-const DC = 180;  // card size px
-const DG = 24;   // gap px
+const DC = 240;  // card size px
+const DG = 36;   // gap px
 const DP = 48;   // left/right padding px
 
 function DesktopCarousel({
@@ -209,9 +209,9 @@ function DesktopCarousel({
         style={{ height: TOTAL_H, gap: DG, paddingLeft: DP, paddingRight: DP }}
       >
         {cones.map((cone, i) => (
-          <div key={cone.id} className="flex-shrink-0 flex flex-col items-center" style={{ gap: 6 }}>
+          <div key={cone.id} className="flex-shrink-0 flex flex-col items-start" style={{ gap: 6 }}>
             <p className="text-[9px] uppercase leading-none" style={{ height: 20, display: 'flex', alignItems: 'center' }}>
-              ({String(cone.index ?? i + 1).padStart(2, '0')})
+              ({String(i + 1).padStart(2, '0')})
             </p>
             <div
               className="overflow-hidden bg-gray-50"
@@ -1055,7 +1055,7 @@ function IndexView({
           >
             <div className="flex-1 min-w-0 space-y-0.5">
               <p className="text-[10px] text-black leading-tight">
-                ({String(cone.index).padStart(2, '0')})
+                ({String(i + 1).padStart(2, '0')})
               </p>
               <p className="text-[10px] uppercase leading-tight truncate text-black">
                 {cone.description || (cone.is_analyzed ? '—' : 'Analyzing...')}
@@ -2042,38 +2042,40 @@ export default function ConesApp() {
         ) : (
           <div
             ref={conesContentRef}
-            className="flex-1 flex flex-col justify-evenly md:justify-center md:gap-10 py-4 overflow-hidden"
+            className="flex-1 flex flex-col py-4 overflow-hidden"
           >
-            {/* Info text — mobile only */}
-            <div className="md:hidden flex flex-col items-center text-center px-4 space-y-0.5 leading-none [&>p]:leading-tight">
-              {infoCone ? (
-                <>
-                  <p className="text-[9px] text-black">
-                    ({String(infoCone.index).padStart(2, '0')})
-                  </p>
-                  <p className="text-[10px] uppercase text-center px-4 text-black">
-                    {infoCone.description ||
-                      (infoCone.is_analyzed ? '—' : 'Analyzing...')}
-                  </p>
-                  {formattedActiveDate && (
-                    <p className="text-[10px] uppercase text-black">
-                      {formattedActiveDate}
+            {/* ── Mobile layout: info + carousel + buttons, evenly spaced ── */}
+            <div className="md:hidden flex-1 flex flex-col justify-evenly">
+              {/* Info text */}
+              <div className="flex flex-col items-center text-center px-4 space-y-0.5 leading-none [&>p]:leading-tight">
+                {infoCone ? (
+                  <>
+                    <p className="text-[9px] text-black">
+                      ({String(currentIndex + 1).padStart(2, '0')})
                     </p>
-                  )}
-                </>
-              ) : conesLoading || displayCones.length === 0 ? null : filter === 'mine' && mineCount === 0 ? null : (
-                <p className="text-[10px] uppercase text-black">
-                  Loading...
-                </p>
-              )}
-            </div>
+                    <p className="text-[10px] uppercase text-center px-4 text-black">
+                      {infoCone.description ||
+                        (infoCone.is_analyzed ? '—' : 'Analyzing...')}
+                    </p>
+                    {formattedActiveDate && (
+                      <p className="text-[10px] uppercase text-black">
+                        {formattedActiveDate}
+                      </p>
+                    )}
+                  </>
+                ) : conesLoading || displayCones.length === 0 ? null : filter === 'mine' && mineCount === 0 ? null : (
+                  <p className="text-[10px] uppercase text-black">
+                    Loading...
+                  </p>
+                )}
+              </div>
 
-            {/* Desktop smooth carousel */}
-            <div className="hidden md:block">
-              <DesktopCarousel
+              {/* Mobile carousel */}
+              <Carousel
                 cones={carouselCones}
                 currentIndex={currentIndex}
                 onChange={setCurrentIndex}
+                wheelDisabled={isDesktop}
                 instantPosition={restoreInstant}
                 onOpenProfile={(cone, index) => {
                   if (cone.id === 'temp' && (cone as any).is_analyzed === 0 && lastUploadedCone) {
@@ -2093,93 +2095,119 @@ export default function ConesApp() {
                 onUploadClick={() => fileInputRef.current?.click()}
                 loading={conesLoading}
               />
-            </div>
 
-            {/* Mobile carousel */}
-            <div className="md:hidden">
-            <Carousel
-              cones={carouselCones}
-              currentIndex={currentIndex}
-              onChange={setCurrentIndex}
-              wheelDisabled={isDesktop}
-              instantPosition={restoreInstant}
-              onOpenProfile={(cone, index) => {
-                // If this is the temporary placeholder cone for an in-progress upload,
-                // re-open the analyzing screen instead of navigating to a profile page.
-                if (cone.id === 'temp' && (cone as any).is_analyzed === 0 && lastUploadedCone) {
-                  setAnalyzingCone(lastUploadedCone);
-                  setActiveTab('cones');
-                  return;
-                }
-                sessionStorage.setItem('cones_return_index', String(index));
-                sessionStorage.setItem('cones_return_filter', filter);
-                sessionStorage.setItem('cones_display_list', JSON.stringify(displayCones));
-                const urlKey = String(index + 1);
-                sessionStorage.setItem('cones_profile_key', urlKey);
-                sessionStorage.setItem('cones_profile_cone', JSON.stringify(cone));
-                router.push(`/cones/${urlKey}${filter === 'mine' ? '?filter=mine' : ''}`);
-              }}
-              filter={filter}
-              onUploadClick={() => fileInputRef.current?.click()}
-              loading={conesLoading}
-            />
-            </div>
-
-            {/* Shuffle button — desktop: with left/right arrows */}
-            <div className="flex justify-center items-center gap-2">
-              {/* Arrows + shuffle */}
-              <button
-                type="button"
-                aria-label="Previous cone"
-                onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}
-                disabled={carouselCones.length <= 1 || currentIndex === 0}
-                className="flex w-9 h-9 md:w-10 md:h-10 rounded-full bg-white items-center justify-center text-gray-500 md:hover:bg-gray-50 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-gray-100"
-                onMouseDown={(e) => {
-                  if (e.button !== 0) return;
-                  startNavRepeat(-1);
-                }}
-                onMouseUp={stopNavRepeat}
-                onMouseLeave={stopNavRepeat}
-                onTouchStart={(e) => {
-                  e.preventDefault();
-                  startNavRepeat(-1);
-                }}
-                onTouchEnd={stopNavRepeat}
-                onTouchCancel={stopNavRepeat}
-              >
-                <LeftArrowIcon />
-              </button>
-              {carouselCones.length > 1 ? (
+              {/* Mobile shuffle + arrows */}
+              <div className="flex justify-center items-center gap-2">
                 <button
-                  onClick={handleShuffle}
-                  className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 md:hover:bg-gray-200 transition-all cursor-pointer"
+                  type="button"
+                  aria-label="Previous cone"
+                  onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}
+                  disabled={carouselCones.length <= 1 || currentIndex === 0}
+                  className="flex w-9 h-9 rounded-full bg-white items-center justify-center text-gray-500 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                  onMouseDown={(e) => { if (e.button !== 0) return; startNavRepeat(-1); }}
+                  onMouseUp={stopNavRepeat}
+                  onMouseLeave={stopNavRepeat}
+                  onTouchStart={(e) => { e.preventDefault(); startNavRepeat(-1); }}
+                  onTouchEnd={stopNavRepeat}
+                  onTouchCancel={stopNavRepeat}
                 >
-                  <ShuffleIcon />
+                  <LeftArrowIcon />
                 </button>
-              ) : (
-                <div className="w-10 h-10" />
-              )}
-              <button
-                type="button"
-                aria-label="Next cone"
-                onClick={() => setCurrentIndex((i) => Math.min(carouselCones.length - 1, i + 1))}
-                disabled={carouselCones.length <= 1 || currentIndex === carouselCones.length - 1}
-                className="flex w-9 h-9 md:w-10 md:h-10 rounded-full bg-white items-center justify-center text-gray-500 md:hover:bg-gray-50 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-gray-100"
-                onMouseDown={(e) => {
-                  if (e.button !== 0) return;
-                  startNavRepeat(1);
-                }}
-                onMouseUp={stopNavRepeat}
-                onMouseLeave={stopNavRepeat}
-                onTouchStart={(e) => {
-                  e.preventDefault();
-                  startNavRepeat(1);
-                }}
-                onTouchEnd={stopNavRepeat}
-                onTouchCancel={stopNavRepeat}
-              >
-                <RightArrowIcon />
-              </button>
+                {carouselCones.length > 1 ? (
+                  <button
+                    onClick={handleShuffle}
+                    className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 transition-all cursor-pointer"
+                  >
+                    <ShuffleIcon />
+                  </button>
+                ) : (
+                  <div className="w-10 h-10" />
+                )}
+                <button
+                  type="button"
+                  aria-label="Next cone"
+                  onClick={() => setCurrentIndex((i) => Math.min(carouselCones.length - 1, i + 1))}
+                  disabled={carouselCones.length <= 1 || currentIndex === carouselCones.length - 1}
+                  className="flex w-9 h-9 rounded-full bg-white items-center justify-center text-gray-500 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                  onMouseDown={(e) => { if (e.button !== 0) return; startNavRepeat(1); }}
+                  onMouseUp={stopNavRepeat}
+                  onMouseLeave={stopNavRepeat}
+                  onTouchStart={(e) => { e.preventDefault(); startNavRepeat(1); }}
+                  onTouchEnd={stopNavRepeat}
+                  onTouchCancel={stopNavRepeat}
+                >
+                  <RightArrowIcon />
+                </button>
+              </div>
+            </div>
+
+            {/* ── Desktop layout: top half carousel, bottom half buttons ── */}
+            <div className="hidden md:flex flex-col flex-1">
+              {/* Top half: carousel vertically centered */}
+              <div className="flex-1 flex items-center">
+                <DesktopCarousel
+                  cones={carouselCones}
+                  currentIndex={currentIndex}
+                  onChange={setCurrentIndex}
+                  instantPosition={restoreInstant}
+                  onOpenProfile={(cone, index) => {
+                    if (cone.id === 'temp' && (cone as any).is_analyzed === 0 && lastUploadedCone) {
+                      setAnalyzingCone(lastUploadedCone);
+                      setActiveTab('cones');
+                      return;
+                    }
+                    sessionStorage.setItem('cones_return_index', String(index));
+                    sessionStorage.setItem('cones_return_filter', filter);
+                    sessionStorage.setItem('cones_display_list', JSON.stringify(displayCones));
+                    const urlKey = String(index + 1);
+                    sessionStorage.setItem('cones_profile_key', urlKey);
+                    sessionStorage.setItem('cones_profile_cone', JSON.stringify(cone));
+                    router.push(`/cones/${urlKey}${filter === 'mine' ? '?filter=mine' : ''}`);
+                  }}
+                  filter={filter}
+                  onUploadClick={() => fileInputRef.current?.click()}
+                  loading={conesLoading}
+                />
+              </div>
+              {/* Bottom half: shuffle + arrows vertically centered */}
+              <div className="flex-1 flex items-center justify-center">
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    aria-label="Previous cone"
+                    onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}
+                    disabled={carouselCones.length <= 1 || currentIndex === 0}
+                    className="flex w-10 h-10 rounded-full bg-white items-center justify-center text-gray-500 hover:bg-gray-50 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                    onMouseDown={(e) => { if (e.button !== 0) return; startNavRepeat(-1); }}
+                    onMouseUp={stopNavRepeat}
+                    onMouseLeave={stopNavRepeat}
+                  >
+                    <LeftArrowIcon />
+                  </button>
+                  {carouselCones.length > 1 ? (
+                    <button
+                      onClick={handleShuffle}
+                      className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200 transition-all cursor-pointer"
+                    >
+                      <ShuffleIcon />
+                    </button>
+                  ) : (
+                    <div className="w-10 h-10" />
+                  )}
+                  <button
+                    type="button"
+                    aria-label="Next cone"
+                    onClick={() => setCurrentIndex((i) => Math.min(carouselCones.length - 1, i + 1))}
+                    disabled={carouselCones.length <= 1 || currentIndex === carouselCones.length - 1}
+                    className="flex w-10 h-10 rounded-full bg-white items-center justify-center text-gray-500 hover:bg-gray-50 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                    onMouseDown={(e) => { if (e.button !== 0) return; startNavRepeat(1); }}
+                    onMouseUp={stopNavRepeat}
+                    onMouseLeave={stopNavRepeat}
+                  >
+                    <RightArrowIcon />
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}

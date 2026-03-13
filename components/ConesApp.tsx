@@ -1215,8 +1215,8 @@ export default function ConesApp() {
       const t = e.touches[0];
       const dx = Math.abs(t.clientX - globalTouchStartX.current);
       const dy = Math.abs(t.clientY - globalTouchStartY.current);
-      // For clearly horizontal swipes, prevent browser navigation gesture
-      if (dx > dy && dx > 8) {
+      // For any horizontal-leaning swipe, aggressively prevent browser navigation gesture
+      if (dx > dy && dx > 2) {
         e.preventDefault();
       }
     };

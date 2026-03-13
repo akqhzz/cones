@@ -17,12 +17,13 @@ interface ConeProfileProps {
   hasNext?: boolean;
 }
 
+// Order: SLOAN (Extraversion, Neuroticism, Conscientiousness, Agreeableness, Openness)
 const BIG_FIVE = [
-  { key: 'openness', label: 'Openness' },
-  { key: 'conscientiousness', label: 'Conscientiousness' },
   { key: 'extraversion', label: 'Extraversion' },
-  { key: 'agreeableness', label: 'Agreeableness' },
   { key: 'neuroticism', label: 'Neuroticism' },
+  { key: 'conscientiousness', label: 'Conscientiousness' },
+  { key: 'agreeableness', label: 'Agreeableness' },
+  { key: 'openness', label: 'Openness' },
 ] as const;
 
 export default function ConeProfile({

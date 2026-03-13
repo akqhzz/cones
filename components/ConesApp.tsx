@@ -701,6 +701,7 @@ function InfoTab() {
                   type="color"
                   className="absolute inset-0 opacity-0 cursor-pointer"
                   value={customColor}
+                  onFocus={() => setStrokeColor(customColor)}
                   onChange={(e) => {
                     const val = e.target.value;
                     setCustomColor(val);
@@ -1724,8 +1725,8 @@ export default function ConesApp() {
       )}
 
       {/* ── Desktop top nav ── */}
-      <header className="hidden md:flex items-start justify-between px-5 py-2.5">
-        <nav className="flex items-start gap-4 flex-shrink-0">
+      <header className="hidden md:grid md:grid-cols-[1fr_auto_1fr] items-start gap-4 px-5 pt-4 pb-2.5">
+        <nav className="flex items-start gap-4 justify-self-start">
           {(['cones', 'info'] as const).map((tab) => (
             <button
               key={tab}
@@ -1741,13 +1742,13 @@ export default function ConesApp() {
           ))}
         </nav>
 
-        <div className="flex-1 flex justify-center">
+        <div className="flex justify-center items-start justify-self-center min-w-0">
           {activeTab === 'cones' ? (
             <div className="flex items-center gap-1.5">
               <FilterPills filter={filter} totalCount={totalCount} mineCount={mineCount} onFilter={setFilter} />
             </div>
           ) : (
-            <p className="hidden md:block mt-1 text-[11px] tracking-[-0.04em] leading-snug text-gray-800 text-left max-w-[500px]">
+            <p className="hidden md:block text-[11px] tracking-[-0.04em] leading-snug text-gray-800 text-left max-w-[500px]">
               I’ve always felt a strange connection to traffic cones. Not for any practical reason,
               just the way they exist. Some stand alone, some gather in groups, some stay put for
               weeks while others appear somewhere new every day. There&apos;s something quietly
@@ -1759,7 +1760,7 @@ export default function ConesApp() {
           )}
         </div>
 
-        <div className="flex items-start gap-8 flex-shrink-0">
+        <div className="flex items-center gap-8 justify-self-end">
           <div className="inline-flex items-center gap-2 rounded-full">
             <button
               type="button"

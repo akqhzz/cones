@@ -930,8 +930,6 @@ export default function ConesApp() {
   // Desktop: page-level horizontal wheel/touch so swipe moves carousel and doesn't trigger browser back
   const [isDesktop, setIsDesktop] = useState(false);
   const conesContentRef = useRef<HTMLDivElement>(null);
-  const pageWheelAccumulator = useRef(0);
-  const pageLastSnapTime = useRef(0);
   const pageWheelResetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pageSteppedRef = useRef(false);
   const pageTouchStartX = useRef(0);
@@ -1116,9 +1114,16 @@ export default function ConesApp() {
       e.preventDefault();
       e.stopPropagation();
 
-      if (pageSteppedRef.current) return;
+      // Already stepped: extend the block window while OS momentum events keep arriving,
+      // then reset only after events stop for SNAP_COOLDOWN ms.
+      if (pageSteppedRef.current) {
+        if (pageWheelResetTimer.current) clearTimeout(pageWheelResetTimer.current);
+        pageWheelResetTimer.current = setTimeout(() => {
+          pageSteppedRef.current = false;
+        }, SNAP_COOLDOWN);
+        return;
+      }
 
-      const now = Date.now();
       const delta = Math.abs(e.deltaX) >= Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
       if (Math.abs(delta) < THRESHOLD) return;
 
@@ -1126,13 +1131,9 @@ export default function ConesApp() {
       setCurrentIndex((i) =>
         Math.min(displayCones.length - 1, Math.max(0, i + dir))
       );
-      pageLastSnapTime.current = now;
       pageSteppedRef.current = true;
       if (pageWheelResetTimer.current) clearTimeout(pageWheelResetTimer.current);
-      // Treat a hardware swipe as a single gesture: require a long enough
-      // idle period before allowing another step.
       pageWheelResetTimer.current = setTimeout(() => {
-        pageWheelAccumulator.current = 0;
         pageSteppedRef.current = false;
       }, SNAP_COOLDOWN);
     };

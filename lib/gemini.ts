@@ -8,7 +8,7 @@ Return ONLY a raw JSON object with no markdown, no explanation, just the JSON.
 If it IS a traffic cone:
 {
   "is_impostor": false,
-  "description": "2-3 words that name this cone's archetype (as if it's a human, make it more artistic). Use simple words. try avoiding 'guardian', 'sentinel', 'sentry', etc. be a bit creative and academic.",
+  "description": "2-3 words that name this cone's archetype (as if it's a human, make it more artistic). Use simple words. try avoiding 'guardian', 'sentinel', 'sentry', etc. be a bit creative and academic.don't add ay punctuations after the words",
   "about": "2-3 sentences in total. describe this cone as if this cone were a person with a distinct personality and story (mention its special charcaterics/interaction with the environment, be a bit creative), including why it fits its big five personality.
    Refer it as 'this cone' if therfore's one cone, or 'These cones' if there are multiple. make the language as natural (doesn't sound like AI) as possible. Make it a bit humorous.",
   "big_five": {
@@ -25,7 +25,7 @@ If it IS a traffic cone:
 
 Rules:
 - Big Five: Analyze this cone's personality using Big Five (OCEAN) theory. If there are multiple cones in the image, make sure it's high in extraversion. If the cone has a lot of interaction with the environment, make it extraverted too. Return a value from 0 to 100 for each of: openness, conscientiousness, extraversion, agreeableness, neuroticism.
-- SLOAN: Return a 5-letter Big Five summary ("SLOAN") based on those values. Order of letters: Extraversion, Neuroticism, Conscientiousness, Agreeableness, Openness. Use standard high/low codes: Extraversion S/R, Neuroticism L/C, Conscientiousness O/U,  Agreeableness A/E, Openness I/N. Example: "RLUAI" means Reserved on openness, Limbic on Neuroticism, etc.
+- SLOAN: Return a 5-letter Big Five summary ("SLOAN") based on those values. Order of letters: Extraversion, Neuroticism, Conscientiousness, Agreeableness, Openness. Use standard high/low codes: Extraversion S/R, Neuroticism L/C, Conscientiousness O/U,  Agreeableness A/E, Openness I/N. Example: "RLUAI" means Reserved on openness, Limbic on Neuroticism, etc. make sure there's no space between each letter. 
 - Core Values: Return 5 to 6 core values that fit this cone's personality (e.g. Safety, Duty, Vigilance, Resilience, Perseverance).
 - Do NOT return a song; leave "song" as null.
 

@@ -42,6 +42,198 @@ function RightArrowIcon() {
   );
 }
 
+// ── Desktop smooth-scroll carousel ────────────────────────────────────────────
+const DC = 180;  // card size px
+const DG = 24;   // gap px
+const DP = 48;   // left/right padding px
+
+function DesktopCarousel({
+  cones,
+  currentIndex,
+  onChange,
+  onOpenProfile,
+  loading,
+  filter,
+  onUploadClick,
+  instantPosition,
+}: {
+  cones: Cone[];
+  currentIndex: number;
+  onChange: (i: number) => void;
+  onOpenProfile: (cone: Cone, index: number) => void;
+  filter: 'all' | 'mine';
+  onUploadClick: () => void;
+  loading?: boolean;
+  instantPosition?: boolean;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef(0);
+  const targetRef = useRef(0);
+  const rafRef = useRef<number | null>(null);
+  const isDragRef = useRef(false);
+  const wasDragRef = useRef(false);
+  const dragX0Ref = useRef(0);
+  const dragS0Ref = useRef(0);
+  const fromExternalRef = useRef(false);
+  const suppressChangeRef = useRef(false);
+  const prevIndexRef = useRef(currentIndex);
+
+  const getMax = useCallback(() => {
+    const w = containerRef.current?.offsetWidth ?? 1440;
+    return Math.max(0, cones.length * (DC + DG) - DG + DP * 2 - w);
+  }, [cones.length]);
+
+  const applyTransform = (x: number) => {
+    if (trackRef.current) trackRef.current.style.transform = `translateX(${-x}px)`;
+  };
+
+  const updateActiveIndex = useCallback((scroll: number) => {
+    if (cones.length === 0 || fromExternalRef.current) return;
+    const w = containerRef.current?.offsetWidth ?? 1440;
+    const centerX = scroll + w / 2 - DP;
+    const idx = Math.max(0, Math.min(cones.length - 1, Math.round((centerX - DC / 2) / (DC + DG))));
+    if (idx !== prevIndexRef.current) {
+      prevIndexRef.current = idx;
+      suppressChangeRef.current = true;
+      onChange(idx);
+    }
+  }, [cones.length, onChange]);
+
+  // Keep animFnRef always fresh so RAF callback sees latest closures
+  const animFnRef = useRef<() => void>(() => {});
+  animFnRef.current = () => {
+    const diff = targetRef.current - scrollRef.current;
+    if (Math.abs(diff) < 0.1) {
+      scrollRef.current = targetRef.current;
+      applyTransform(scrollRef.current);
+      fromExternalRef.current = false;
+      rafRef.current = null;
+      updateActiveIndex(scrollRef.current);
+      return;
+    }
+    scrollRef.current += diff * 0.1;
+    applyTransform(scrollRef.current);
+    updateActiveIndex(scrollRef.current);
+    rafRef.current = requestAnimationFrame(() => animFnRef.current());
+  };
+
+  const startAnim = useCallback(() => {
+    if (!rafRef.current) rafRef.current = requestAnimationFrame(() => animFnRef.current());
+  }, []);
+
+  const scrollToIndex = useCallback((idx: number, instant: boolean) => {
+    const w = containerRef.current?.offsetWidth ?? 1440;
+    const coneCenter = DP + idx * (DC + DG) + DC / 2;
+    const target = Math.max(0, Math.min(getMax(), coneCenter - w / 2));
+    targetRef.current = target;
+    if (instant) {
+      scrollRef.current = target;
+      if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null; }
+      applyTransform(target);
+      fromExternalRef.current = false;
+    } else {
+      fromExternalRef.current = true;
+      startAnim();
+    }
+  }, [getMax, startAnim]);
+
+  // Respond to external currentIndex changes (shuffle, arrows)
+  useEffect(() => {
+    if (suppressChangeRef.current) { suppressChangeRef.current = false; return; }
+    if (cones.length === 0) return;
+    if (currentIndex === prevIndexRef.current && !instantPosition) return;
+    prevIndexRef.current = currentIndex;
+    scrollToIndex(currentIndex, !!instantPosition);
+  }, [currentIndex, instantPosition, scrollToIndex, cones.length]);
+
+  // Wheel / trackpad
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+      fromExternalRef.current = false;
+      targetRef.current = Math.max(0, Math.min(getMax(), targetRef.current + delta));
+      startAnim();
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, [cones.length, getMax, startAnim]);
+
+  const onMouseDown = (e: React.MouseEvent) => {
+    isDragRef.current = true;
+    wasDragRef.current = false;
+    dragX0Ref.current = e.clientX;
+    dragS0Ref.current = targetRef.current;
+  };
+  const onMouseMove = (e: React.MouseEvent) => {
+    if (!isDragRef.current) return;
+    const diff = e.clientX - dragX0Ref.current;
+    if (Math.abs(diff) > 5) wasDragRef.current = true;
+    const t = Math.max(0, Math.min(getMax(), dragS0Ref.current - diff));
+    targetRef.current = t; scrollRef.current = t;
+    applyTransform(t);
+  };
+  const onMouseUp = () => { isDragRef.current = false; };
+
+  const TOTAL_H = 20 + 6 + DC; // label + gap + card
+
+  if (loading) return (
+    <div className="w-full flex items-center justify-center" style={{ height: TOTAL_H }}>
+      <p className="text-[10px] uppercase text-gray-400">Loading...</p>
+    </div>
+  );
+  if (cones.length === 0) return (
+    <div className="w-full flex items-center justify-center" style={{ height: TOTAL_H }}>
+      {filter === 'mine'
+        ? <p className="text-[10px] uppercase text-black"><button type="button" onClick={onUploadClick} className="underline cursor-pointer">UPLOAD</button>{' your first cone'}</p>
+        : <p className="text-[9px] uppercase text-gray-300">No cones yet</p>}
+    </div>
+  );
+
+  return (
+    <div
+      ref={containerRef}
+      className="relative overflow-hidden select-none w-full cursor-grab active:cursor-grabbing"
+      style={{ height: TOTAL_H }}
+      onMouseDown={onMouseDown}
+      onMouseMove={onMouseMove}
+      onMouseUp={onMouseUp}
+      onMouseLeave={() => { isDragRef.current = false; }}
+    >
+      <div
+        ref={trackRef}
+        className="absolute top-0 flex items-center"
+        style={{ height: TOTAL_H, gap: DG, paddingLeft: DP, paddingRight: DP }}
+      >
+        {cones.map((cone, i) => (
+          <div key={cone.id} className="flex-shrink-0 flex flex-col items-center" style={{ gap: 6 }}>
+            <p className="text-[9px] uppercase leading-none" style={{ height: 20, display: 'flex', alignItems: 'center' }}>
+              ({String(cone.index ?? i + 1).padStart(2, '0')})
+            </p>
+            <div
+              className="overflow-hidden bg-gray-50"
+              style={{ width: DC, height: DC, cursor: 'pointer' }}
+              onClick={() => { if (!wasDragRef.current) onOpenProfile(cone, i); }}
+            >
+              {cone.image_path && (
+                <img
+                  src={cone.image_path}
+                  alt={cone.description || 'Cone'}
+                  className="w-full h-full object-cover pointer-events-none"
+                  draggable={false}
+                />
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── Carousel ──────────────────────────────────────────────────────────────────
 function Carousel({
   cones,
@@ -1850,10 +2042,10 @@ export default function ConesApp() {
         ) : (
           <div
             ref={conesContentRef}
-            className="flex-1 flex flex-col justify-evenly py-4 overflow-hidden"
+            className="flex-1 flex flex-col justify-evenly md:justify-center md:gap-10 py-4 overflow-hidden"
           >
-            {/* Info text / last uploaded cone (no thumbnail) */}
-            <div className="flex flex-col items-center text-center px-4 space-y-0.5 leading-none [&>p]:leading-tight">
+            {/* Info text — mobile only */}
+            <div className="md:hidden flex flex-col items-center text-center px-4 space-y-0.5 leading-none [&>p]:leading-tight">
               {infoCone ? (
                 <>
                   <p className="text-[9px] text-black">
@@ -1876,7 +2068,35 @@ export default function ConesApp() {
               )}
             </div>
 
-            {/* Carousel — full viewport width, no centering wrapper */}
+            {/* Desktop smooth carousel */}
+            <div className="hidden md:block">
+              <DesktopCarousel
+                cones={carouselCones}
+                currentIndex={currentIndex}
+                onChange={setCurrentIndex}
+                instantPosition={restoreInstant}
+                onOpenProfile={(cone, index) => {
+                  if (cone.id === 'temp' && (cone as any).is_analyzed === 0 && lastUploadedCone) {
+                    setAnalyzingCone(lastUploadedCone);
+                    setActiveTab('cones');
+                    return;
+                  }
+                  sessionStorage.setItem('cones_return_index', String(index));
+                  sessionStorage.setItem('cones_return_filter', filter);
+                  sessionStorage.setItem('cones_display_list', JSON.stringify(displayCones));
+                  const urlKey = String(index + 1);
+                  sessionStorage.setItem('cones_profile_key', urlKey);
+                  sessionStorage.setItem('cones_profile_cone', JSON.stringify(cone));
+                  router.push(`/cones/${urlKey}${filter === 'mine' ? '?filter=mine' : ''}`);
+                }}
+                filter={filter}
+                onUploadClick={() => fileInputRef.current?.click()}
+                loading={conesLoading}
+              />
+            </div>
+
+            {/* Mobile carousel */}
+            <div className="md:hidden">
             <Carousel
               cones={carouselCones}
               currentIndex={currentIndex}
@@ -1903,6 +2123,7 @@ export default function ConesApp() {
               onUploadClick={() => fileInputRef.current?.click()}
               loading={conesLoading}
             />
+            </div>
 
             {/* Shuffle button — desktop: with left/right arrows */}
             <div className="flex justify-center items-center gap-2">

@@ -2109,7 +2109,16 @@ export default function ConesApp() {
                 aria-label="Previous cone"
                 onClick={() => {
                   if (isDesktop) {
-                    const next = Math.max(0, currentIndex - 1);
+                    // Read actual scroll position so we step from where the carousel
+                    // visually is, not from the (possibly stale) currentIndex state.
+                    const carousel = document.querySelector<HTMLElement>('[data-carousel-root="1"]');
+                    const first = carousel?.querySelector<HTMLElement>('[data-carousel-item="0"]');
+                    const second = carousel?.querySelector<HTMLElement>('[data-carousel-item="1"]');
+                    const stride = (first && second) ? second.offsetLeft - first.offsetLeft : 0;
+                    const visibleIdx = stride > 0
+                      ? Math.round((carousel?.scrollLeft ?? 0) / stride)
+                      : currentIndex;
+                    const next = Math.max(0, visibleIdx - 1);
                     setCurrentIndex(next);
                     scrollDesktopCarouselToIndex(next, { smooth: true });
                   } else {
@@ -2148,7 +2157,14 @@ export default function ConesApp() {
                 aria-label="Next cone"
                 onClick={() => {
                   if (isDesktop) {
-                    const next = Math.min(carouselCones.length - 1, currentIndex + 1);
+                    const carousel = document.querySelector<HTMLElement>('[data-carousel-root="1"]');
+                    const first = carousel?.querySelector<HTMLElement>('[data-carousel-item="0"]');
+                    const second = carousel?.querySelector<HTMLElement>('[data-carousel-item="1"]');
+                    const stride = (first && second) ? second.offsetLeft - first.offsetLeft : 0;
+                    const visibleIdx = stride > 0
+                      ? Math.round((carousel?.scrollLeft ?? 0) / stride)
+                      : currentIndex;
+                    const next = Math.min(carouselCones.length - 1, visibleIdx + 1);
                     setCurrentIndex(next);
                     scrollDesktopCarouselToIndex(next, { smooth: true });
                   } else {

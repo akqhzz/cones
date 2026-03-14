@@ -2250,7 +2250,7 @@ export default function ConesApp() {
                   {/* Desktop: cycle asc → desc → random */}
                   <button
                     onClick={handleShuffle}
-                    className="hidden md:flex w-10 h-10 rounded-full bg-gray-100 items-center justify-center text-gray-500 cursor-pointer"
+                    className="hidden md:flex w-10 h-10 items-center justify-center text-gray-500 cursor-pointer"
                   >
                     {sortMode === 'asc' ? <SortAscIcon /> : sortMode === 'desc' ? <SortDescIcon /> : <span className="[&>svg]:w-3 [&>svg]:h-3"><ShuffleIcon /></span>}
                   </button>

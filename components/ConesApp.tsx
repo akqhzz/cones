@@ -1891,17 +1891,17 @@ export default function ConesApp() {
           if (stride > 0 && carousel) {
             const visibleIdx = Math.round(carousel.scrollLeft / stride);
             const next = dir < 0
-              ? Math.max(0, visibleIdx - 1)
-              : Math.min(visibleCones.length - 1, visibleIdx + 1);
+              ? Math.max(0, visibleIdx - 3)
+              : Math.min(visibleCones.length - 1, visibleIdx + 3);
             setCurrentIndex(next);
-            scrollDesktopCarouselToIndex(next, { smooth: true });
+            scrollDesktopCarouselToIndex(next, { smooth: false });
           }
         } else {
           setCurrentIndex((i) =>
             dir < 0 ? Math.max(0, i - 1) : Math.min(visibleCones.length - 1, i + 1)
           );
         }
-      }, 60);
+      }, 80);
     }, 300);
   };
 

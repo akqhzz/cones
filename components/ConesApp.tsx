@@ -725,7 +725,7 @@ function InfoTab() {
       if (availableForCone <= 0) return;
 
       const maxWidth = wrapper.clientWidth;
-      const idealMax = isDesktop ? 640 : 440;
+      const idealMax = isDesktop ? 420 : 440;
       const size = Math.max(0, Math.min(availableForCone, maxWidth, idealMax));
       setConeSize(size);
     };
@@ -755,7 +755,7 @@ function InfoTab() {
           human about them.
           <br />
           <br />
-          So this is my small tribute to them. Upload a cone, receive its personality profile and
+          So this is my small tribute to the cones. Upload a cone, receive its personality profile and
           a song that matches its vibe. Every cone has a story.
         </p>
 

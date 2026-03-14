@@ -469,8 +469,6 @@ function InfoTab() {
   const isDrawingRef = useRef(false);
   const lastPointRef = useRef<{ x: number; y: number } | null>(null);
   const colorInputRef = useRef<HTMLInputElement | null>(null);
-  const colorPickerBtnRef = useRef<HTMLButtonElement | null>(null);
-  const [colorPickerOpen, setColorPickerOpen] = useState(false);
 
   const buildMask = useCallback(() => {
     const canvas = canvasRef.current;
@@ -736,18 +734,6 @@ function InfoTab() {
     return () => window.removeEventListener('resize', updateSize);
   }, []);
 
-  useEffect(() => {
-    if (!colorPickerOpen) return;
-    const handleClickOutside = (e: PointerEvent) => {
-      if (colorPickerBtnRef.current && !colorPickerBtnRef.current.contains(e.target as Node)) {
-        colorInputRef.current?.blur();
-        setColorPickerOpen(false);
-      }
-    };
-    document.addEventListener('pointerdown', handleClickOutside);
-    return () => document.removeEventListener('pointerdown', handleClickOutside);
-  }, [colorPickerOpen]);
-
   return (
     <div className="flex-1 flex flex-col px-6 pt-6 pb-0 md:pb-6">
       <img
@@ -818,7 +804,6 @@ function InfoTab() {
               ))}
               {/* Custom color picker */}
               <button
-                ref={colorPickerBtnRef}
                 type="button"
                 className="relative w-3 h-3 rounded-full cursor-pointer flex items-center justify-center text-[10px] leading-none"
                 style={{
@@ -826,16 +811,12 @@ function InfoTab() {
                   backgroundColor: strokeColor === customColor ? customColor : 'transparent',
                   color: '#555',
                 }}
-                onClick={() => {
-                  setColorPickerOpen(true);
-                  colorInputRef.current?.click();
-                }}
               >
                 {strokeColor === customColor ? '' : '+'}
                 <input
                   ref={colorInputRef}
                   type="color"
-                  className="absolute inset-0 opacity-0 pointer-events-none"
+                  className="absolute inset-0 opacity-0 cursor-pointer"
                   value={customColor}
                   onFocus={() => setStrokeColor(customColor)}
                   onChange={(e) => {
@@ -843,7 +824,6 @@ function InfoTab() {
                     setCustomColor(val);
                     setStrokeColor(val);
                   }}
-                  onBlur={() => setColorPickerOpen(false)}
                 />
               </button>
             </div>
@@ -1903,11 +1883,26 @@ export default function ConesApp() {
     navRepeatTimeoutRef.current = window.setTimeout(() => {
       navRepeatTimeoutRef.current = null;
       navRepeatIntervalRef.current = window.setInterval(() => {
-        setCurrentIndex((i) =>
-          dir < 0 ? Math.max(0, i - 1) : Math.min(visibleCones.length - 1, i + 1)
-        );
-      }, 120);
-    }, 280);
+        if (isDesktop) {
+          const carousel = document.querySelector<HTMLElement>('[data-carousel-root="1"]');
+          const first = carousel?.querySelector<HTMLElement>('[data-carousel-item="0"]');
+          const second = carousel?.querySelector<HTMLElement>('[data-carousel-item="1"]');
+          const stride = (first && second) ? second.offsetLeft - first.offsetLeft : 0;
+          if (stride > 0 && carousel) {
+            const visibleIdx = Math.round(carousel.scrollLeft / stride);
+            const next = dir < 0
+              ? Math.max(0, visibleIdx - 1)
+              : Math.min(visibleCones.length - 1, visibleIdx + 1);
+            setCurrentIndex(next);
+            scrollDesktopCarouselToIndex(next, { smooth: true });
+          }
+        } else {
+          setCurrentIndex((i) =>
+            dir < 0 ? Math.max(0, i - 1) : Math.min(visibleCones.length - 1, i + 1)
+          );
+        }
+      }, 150);
+    }, 400);
   };
 
   const stopNavRepeat = () => {

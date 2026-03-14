@@ -1901,8 +1901,8 @@ export default function ConesApp() {
             dir < 0 ? Math.max(0, i - 1) : Math.min(visibleCones.length - 1, i + 1)
           );
         }
-      }, 150);
-    }, 400);
+      }, 60);
+    }, 300);
   };
 
   const stopNavRepeat = () => {

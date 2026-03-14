@@ -27,19 +27,17 @@ function ShuffleIcon() {
 }
 function SortAscIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="3" y1="6" x2="21" y2="6" />
-      <line x1="3" y1="12" x2="14" y2="12" />
-      <line x1="3" y1="18" x2="7" y2="18" />
+    <svg width="22" height="25" viewBox="0 0 22 25" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M6 13V5.825L3.425 8.4L2 7L7 2L12 7L10.575 8.4L8 5.825V13H6Z" fill="#848484"/>
+      <path d="M14 12V19.175L11.425 16.6L10 18L15 23L20 18L18.575 16.6L16 19.175V12H14Z" fill="#DDDDDD"/>
     </svg>
   );
 }
 function SortDescIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="3" y1="6" x2="7" y2="6" />
-      <line x1="3" y1="12" x2="14" y2="12" />
-      <line x1="3" y1="18" x2="21" y2="18" />
+    <svg width="22" height="25" viewBox="0 0 22 25" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M6 13V5.825L3.425 8.4L2 7L7 2L12 7L10.575 8.4L8 5.825V13H6Z" fill="#DDDDDD"/>
+      <path d="M14 12V19.175L11.425 16.6L10 18L15 23L20 18L18.575 16.6L16 19.175V12H14Z" fill="#848484"/>
     </svg>
   );
 }
@@ -709,8 +707,8 @@ function InfoTab() {
 
       let bottomLimit: number;
       if (isDesktop) {
-        // 40px gap above bottom of viewport
-        bottomLimit = viewportHeight - 40;
+        // 20px gap above bottom of viewport
+        bottomLimit = viewportHeight - 20;
       } else {
         const bottomNav = document.querySelector<HTMLElement>('nav[data-cones-bottom-nav="1"]');
         const navRect = bottomNav?.getBoundingClientRect();
@@ -725,7 +723,7 @@ function InfoTab() {
       if (availableForCone <= 0) return;
 
       const maxWidth = wrapper.clientWidth;
-      const idealMax = isDesktop ? 420 : 440;
+      const idealMax = isDesktop ? 600 : 440;
       const size = Math.max(0, Math.min(availableForCone, maxWidth, idealMax));
       setConeSize(size);
     };

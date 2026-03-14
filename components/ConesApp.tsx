@@ -469,6 +469,7 @@ function InfoTab() {
   const isDrawingRef = useRef(false);
   const lastPointRef = useRef<{ x: number; y: number } | null>(null);
   const colorInputRef = useRef<HTMLInputElement | null>(null);
+  const colorPickerButtonRectRef = useRef<DOMRect | null>(null);
 
   const buildMask = useCallback(() => {
     const canvas = canvasRef.current;
@@ -644,6 +645,40 @@ function InfoTab() {
     setHasDrawn(true);
   }, [applyImageData]);
 
+  // Close custom color picker when clicking outside it (e.g. on a swatch or near popup edge)
+  useEffect(() => {
+    const TOLERANCE = 12; // pixels outside the + button still count as "outside"
+    const closePicker = (e: MouseEvent | TouchEvent) => {
+      const input = colorInputRef.current;
+      if (!input || document.activeElement !== input) return;
+      const x = 'touches' in e ? (e as TouchEvent).touches[0]?.clientX : (e as MouseEvent).clientX;
+      const y = 'touches' in e ? (e as TouchEvent).touches[0]?.clientY : (e as MouseEvent).clientY;
+      // First check position: if click is outside the custom color button (with tolerance),
+      // close immediately. This handles clicks near the native picker popup that still
+      // report target as the input.
+      const rect = colorPickerButtonRectRef.current;
+      if (rect && typeof x === 'number' && typeof y === 'number') {
+        const outside =
+          x < rect.left - TOLERANCE ||
+          x > rect.right + TOLERANCE ||
+          y < rect.top - TOLERANCE ||
+          y > rect.bottom + TOLERANCE;
+        if (outside) {
+          input.blur();
+          return;
+        }
+      }
+      // Close on any other click (including clicking the color circle again)
+      input.blur();
+    };
+    document.addEventListener('mousedown', closePicker, true);
+    document.addEventListener('touchstart', closePicker, true);
+    return () => {
+      document.removeEventListener('mousedown', closePicker, true);
+      document.removeEventListener('touchstart', closePicker, true);
+    };
+  }, []);
+
   // Build mask when image has loaded (and canvas may already be sized)
   useEffect(() => {
     if (!imageLoaded) return;
@@ -818,7 +853,14 @@ function InfoTab() {
                   type="color"
                   className="absolute inset-0 opacity-0 cursor-pointer"
                   value={customColor}
-                  onFocus={() => setStrokeColor(customColor)}
+                  onFocus={() => {
+                    const btn = colorInputRef.current?.parentElement;
+                    if (btn) colorPickerButtonRectRef.current = btn.getBoundingClientRect();
+                    setStrokeColor(customColor);
+                  }}
+                  onBlur={() => {
+                    colorPickerButtonRectRef.current = null;
+                  }}
                   onChange={(e) => {
                     const val = e.target.value;
                     setCustomColor(val);

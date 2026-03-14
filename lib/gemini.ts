@@ -24,7 +24,7 @@ If it IS a traffic cone:
 }
 
 Rules:
-- Big Five: Analyze this cone's personality using Big Five (OCEAN) theory. If there are multiple cones in the image, make sure it's high in extraversion. If the cone has a lot of interaction with the environment, make it extraverted too. Return a value from 0 to 100 for each of: openness, conscientiousness, extraversion, agreeableness, neuroticism.
+- Big Five: Analyze this cone's personality using Big Five (OCEAN) theory. If there are multiple cones in the image, make sure it's high in extraversion. If the cone has a lot of interaction with the environment, make it extraverted too. If the cone is pretty tortured/bent, make it high in neuroticism.Return a value from 0 to 100 for each of: openness, conscientiousness, extraversion, agreeableness, neuroticism.
 - SLOAN: Return a 5-letter Big Five summary ("SLOAN") based on those values. Order of letters: Extraversion, Neuroticism, Conscientiousness, Agreeableness, Openness. Use standard high/low codes: Extraversion S/R, Neuroticism L/C, Conscientiousness O/U,  Agreeableness A/E, Openness I/N. Example: "RLUAI" means Reserved on openness, Limbic on Neuroticism, etc. make sure there's no space between each letter. 
 - Core Values: Return 5 to 6 positive core values that fit this cone's personality (e.g. Safety, Duty, Vigilance, Resilience, Perseverance).
 - Do NOT return a song; leave "song" as null.

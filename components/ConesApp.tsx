@@ -1868,6 +1868,18 @@ export default function ConesApp() {
     });
   };
 
+  const handleMobileShuffle = () => {
+    if (carouselCones.length === 0) return;
+    const arr = [...carouselCones];
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    setRandomOrder(arr);
+    setSortMode('random');
+    setCurrentIndex(0);
+  };
+
   const startNavRepeat = (dir: -1 | 1) => {
     if (navRepeatTimeoutRef.current != null || navRepeatIntervalRef.current != null) return;
     navRepeatTimeoutRef.current = window.setTimeout(() => {
@@ -2212,12 +2224,22 @@ export default function ConesApp() {
                 <LeftArrowIcon />
               </button>
               {visibleCones.length > 1 ? (
-                <button
-                  onClick={handleShuffle}
-                  className="w-10 h-10 flex items-center justify-center text-gray-500 md:hover:text-gray-800 transition-colors cursor-pointer"
-                >
-                  {sortMode === 'asc' ? <SortAscIcon /> : sortMode === 'desc' ? <SortDescIcon /> : <ShuffleIcon />}
-                </button>
+                <>
+                  {/* Mobile: always shuffle icon with grey bg */}
+                  <button
+                    onClick={handleMobileShuffle}
+                    className="md:hidden w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 transition-colors cursor-pointer"
+                  >
+                    <ShuffleIcon />
+                  </button>
+                  {/* Desktop: cycle asc → desc → random */}
+                  <button
+                    onClick={handleShuffle}
+                    className="hidden md:flex w-10 h-10 items-center justify-center text-gray-500 md:hover:text-gray-800 transition-colors cursor-pointer"
+                  >
+                    {sortMode === 'asc' ? <SortAscIcon /> : sortMode === 'desc' ? <SortDescIcon /> : <ShuffleIcon />}
+                  </button>
+                </>
               ) : (
                 <div className="w-10 h-10" />
               )}

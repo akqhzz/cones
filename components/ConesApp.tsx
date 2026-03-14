@@ -1870,15 +1870,12 @@ export default function ConesApp() {
   };
 
   const handleMobileShuffle = () => {
-    if (carouselCones.length === 0) return;
-    const arr = [...carouselCones];
-    for (let i = arr.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [arr[i], arr[j]] = [arr[j], arr[i]];
+    if (visibleCones.length === 0) return;
+    let next = Math.floor(Math.random() * visibleCones.length);
+    if (visibleCones.length > 1 && next === currentIndex) {
+      next = (next + 1) % visibleCones.length;
     }
-    setRandomOrder(arr);
-    setSortMode('random');
-    setCurrentIndex(0);
+    setCurrentIndex(next);
   };
 
   const startNavRepeat = (dir: -1 | 1) => {

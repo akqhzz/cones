@@ -758,7 +758,7 @@ function InfoTab() {
           a song that matches its vibe. Every cone has a story.
         </p>
 
-        <div className="flex flex-col items-center gap-4 md:gap-5 mt-8 md:mt-16 mb-0">
+        <div className="flex flex-col items-center gap-4 md:gap-5 mt-8 md:mt-24 mb-0">
           <div
             ref={containerRef}
             className="relative w-full max-w-[440px] md:max-w-[480px] aspect-square touch-none select-none"
@@ -2024,15 +2024,17 @@ export default function ConesApp() {
               just the way they exist. Some stand alone, some gather in groups, some stay put for
               weeks while others appear somewhere new every day. There&apos;s something quietly
               human about them.
+      
+              <br />
               {' '}
-              So this is my small tribute to them. Upload a cone, receive its personality profile and
+              So this is my small tribute to the cones. Upload a cone, receive its personality profile and
               a song that matches its vibe. Every cone has a story.
             </p>
           )}
         </div>
 
         <div className="flex items-center gap-8 justify-self-end">
-          <div className="inline-flex items-center gap-2 rounded-full">
+          <div className={`inline-flex items-center gap-2 rounded-full${activeTab === 'info' ? ' md:hidden' : ''}`}>
             <button
               type="button"
               onClick={() => setViewMode('list')}

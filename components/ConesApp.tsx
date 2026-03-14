@@ -469,6 +469,8 @@ function InfoTab() {
   const isDrawingRef = useRef(false);
   const lastPointRef = useRef<{ x: number; y: number } | null>(null);
   const colorInputRef = useRef<HTMLInputElement | null>(null);
+  const colorPickerBtnRef = useRef<HTMLButtonElement | null>(null);
+  const [colorPickerOpen, setColorPickerOpen] = useState(false);
 
   const buildMask = useCallback(() => {
     const canvas = canvasRef.current;
@@ -734,6 +736,18 @@ function InfoTab() {
     return () => window.removeEventListener('resize', updateSize);
   }, []);
 
+  useEffect(() => {
+    if (!colorPickerOpen) return;
+    const handleClickOutside = (e: PointerEvent) => {
+      if (colorPickerBtnRef.current && !colorPickerBtnRef.current.contains(e.target as Node)) {
+        colorInputRef.current?.blur();
+        setColorPickerOpen(false);
+      }
+    };
+    document.addEventListener('pointerdown', handleClickOutside);
+    return () => document.removeEventListener('pointerdown', handleClickOutside);
+  }, [colorPickerOpen]);
+
   return (
     <div className="flex-1 flex flex-col px-6 pt-6 pb-0 md:pb-6">
       <img
@@ -804,6 +818,7 @@ function InfoTab() {
               ))}
               {/* Custom color picker */}
               <button
+                ref={colorPickerBtnRef}
                 type="button"
                 className="relative w-3 h-3 rounded-full cursor-pointer flex items-center justify-center text-[10px] leading-none"
                 style={{
@@ -811,12 +826,16 @@ function InfoTab() {
                   backgroundColor: strokeColor === customColor ? customColor : 'transparent',
                   color: '#555',
                 }}
+                onClick={() => {
+                  setColorPickerOpen(true);
+                  colorInputRef.current?.click();
+                }}
               >
                 {strokeColor === customColor ? '' : '+'}
                 <input
                   ref={colorInputRef}
                   type="color"
-                  className="absolute inset-0 opacity-0 cursor-pointer"
+                  className="absolute inset-0 opacity-0 pointer-events-none"
                   value={customColor}
                   onFocus={() => setStrokeColor(customColor)}
                   onChange={(e) => {
@@ -824,6 +843,7 @@ function InfoTab() {
                     setCustomColor(val);
                     setStrokeColor(val);
                   }}
+                  onBlur={() => setColorPickerOpen(false)}
                 />
               </button>
             </div>

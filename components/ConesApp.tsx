@@ -27,7 +27,7 @@ function ShuffleIcon() {
 }
 function SortAscIcon() {
   return (
-    <svg width="24" height="24" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M4.44434 4.72219L6.66656 2.22219M6.66656 2.22219L8.88878 4.72219M6.66656 2.22219V11.1111" stroke="#697281" strokeLinecap="round" strokeLinejoin="round"/>
       <path d="M10 15.2778L12.2222 17.7778M12.2222 17.7778L14.4444 15.2778M12.2222 17.7778C12.2222 17.7778 12.2222 13.3497 12.2222 9.44446" stroke="#DDDDDD" strokeLinecap="round" strokeLinejoin="round"/>
 
@@ -36,7 +36,7 @@ function SortAscIcon() {
 }
 function SortDescIcon() {
   return (
-    <svg width="24" height="24" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M4.44434 4.72219L6.66656 2.22219M6.66656 2.22219L8.88878 4.72219M6.66656 2.22219V11.1111" stroke="#DDDDDD" strokeLinecap="round" strokeLinejoin="round"/>
       <path d="M10 15.2778L12.2222 17.7778M12.2222 17.7778L14.4444 15.2778M12.2222 17.7778C12.2222 17.7778 12.2222 13.3497 12.2222 9.44446" stroke="#697281" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
@@ -2236,7 +2236,7 @@ export default function ConesApp() {
                   {/* Desktop: cycle asc → desc → random */}
                   <button
                     onClick={handleShuffle}
-                    className="hidden md:flex w-10 h-10 items-center justify-center text-gray-500 md:hover:text-gray-800 transition-colors cursor-pointer"
+                    className="hidden md:flex w-10 h-10 items-center justify-center text-gray-500 cursor-pointer"
                   >
                     {sortMode === 'asc' ? <SortAscIcon /> : sortMode === 'desc' ? <SortDescIcon /> : <span className="[&>svg]:w-3 [&>svg]:h-3"><ShuffleIcon /></span>}
                   </button>

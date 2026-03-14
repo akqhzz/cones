@@ -724,7 +724,7 @@ function InfoTab() {
       if (availableForCone <= 0) return;
 
       const maxWidth = wrapper.clientWidth;
-      const idealMax = isDesktop ? 460 : 440;
+      const idealMax = isDesktop ? 600 : 440;
       const size = Math.max(0, Math.min(availableForCone, maxWidth, idealMax));
       setConeSize(size);
     };
@@ -758,7 +758,7 @@ function InfoTab() {
           a song that matches its vibe. Every cone has a story.
         </p>
 
-        <div className="flex flex-col items-center gap-4 md:gap-5 mt-8 md:mt-32 mb-0">
+        <div className="flex flex-col items-center gap-4 md:gap-5 mt-8 md:mt-24 mb-0">
           <div
             ref={containerRef}
             className="relative w-full max-w-[440px] md:max-w-[480px] aspect-square touch-none select-none"
@@ -1381,41 +1381,7 @@ export default function ConesApp() {
       }
     };
 
-    // Desktop: drag anywhere on the page to scroll the carousel
-    let dragStartX = 0;
-    let dragScrollStart = 0;
-    let isDragging = false;
-
-    const handleMouseDown = (e: MouseEvent) => {
-      if (!isDesktop) return;
-      if (isCroppingRef.current) return;
-      if (viewMode !== 'list') return;
-      if (e.button !== 0) return;
-      // Don't hijack clicks on buttons/inputs/links
-      const tag = (e.target as HTMLElement).tagName;
-      if (['BUTTON', 'INPUT', 'A', 'LABEL'].includes(tag)) return;
-      const carousel = document.querySelector<HTMLElement>('[data-carousel-root="1"]');
-      if (!carousel) return;
-      isDragging = true;
-      dragStartX = e.clientX;
-      dragScrollStart = carousel.scrollLeft;
-      e.preventDefault();
-    };
-
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!isDragging) return;
-      const carousel = document.querySelector<HTMLElement>('[data-carousel-root="1"]');
-      if (!carousel) return;
-      carousel.scrollLeft = dragScrollStart - (e.clientX - dragStartX);
-    };
-
-    const handleMouseUp = () => { isDragging = false; };
-
     window.addEventListener('wheel', handleWheel, { passive: false, capture: true });
-    window.addEventListener('mousedown', handleMouseDown);
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
-
     const el = conesContentRef.current;
     if (el) {
       el.addEventListener('touchstart', handleTouchStart, { passive: true });
@@ -1425,9 +1391,6 @@ export default function ConesApp() {
 
     return () => {
       window.removeEventListener('wheel', handleWheel, { capture: true } as any);
-      window.removeEventListener('mousedown', handleMouseDown);
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
       if (el) {
         el.removeEventListener('touchstart', handleTouchStart);
         el.removeEventListener('touchmove', handleTouchMove);
@@ -1932,10 +1895,6 @@ export default function ConesApp() {
               : Math.min(visibleCones.length - 1, visibleIdx + 3);
             setCurrentIndex(next);
             scrollDesktopCarouselToIndex(next, { smooth: false });
-            // Stop repeating if we've hit the boundary
-            if ((dir < 0 && next === 0) || (dir > 0 && next === visibleCones.length - 1)) {
-              stopNavRepeat();
-            }
           }
         } else {
           setCurrentIndex((i) =>

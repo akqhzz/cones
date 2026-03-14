@@ -27,17 +27,17 @@ function ShuffleIcon() {
 }
 function SortAscIcon() {
   return (
-    <svg width="22" height="25" viewBox="0 0 22 25" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M6 13V5.825L3.425 8.4L2 7L7 2L12 7L10.575 8.4L8 5.825V13H6Z" fill="#848484"/>
-      <path d="M14 12V19.175L11.425 16.6L10 18L15 23L20 18L18.575 16.6L16 19.175V12H14Z" fill="#DDDDDD"/>
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M7 7.25L9 5M9 5L11 7.25M9 5V13" stroke="#697281" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M12 16.75L14 19M14 19L16 16.75M14 19C14 19 14 15.0147 14 11.5" stroke="#DDDDDD" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   );
 }
 function SortDescIcon() {
   return (
-    <svg width="22" height="25" viewBox="0 0 22 25" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M6 13V5.825L3.425 8.4L2 7L7 2L12 7L10.575 8.4L8 5.825V13H6Z" fill="#DDDDDD"/>
-      <path d="M14 12V19.175L11.425 16.6L10 18L15 23L20 18L18.575 16.6L16 19.175V12H14Z" fill="#848484"/>
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M7 7.25L9 5M9 5L11 7.25M9 5V13" stroke="#DDDDDD" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M12 16.75L14 19M14 19L16 16.75M14 19C14 19 14 15.0147 14 11.5" stroke="#697281" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   );
 }

@@ -488,6 +488,8 @@ function InfoTab() {
   const lastPointRef = useRef<{ x: number; y: number } | null>(null);
   const colorInputRef = useRef<HTMLInputElement | null>(null);
   const colorPickerButtonRectRef = useRef<DOMRect | null>(null);
+  const infoTouchStartX = useRef(0);
+  const infoTouchStartY = useRef(0);
 
   const buildMask = useCallback(() => {
     const canvas = canvasRef.current;
@@ -619,6 +621,36 @@ function InfoTab() {
     if (isDrawingRef.current) setHasDrawn(true);
     isDrawingRef.current = false;
     lastPointRef.current = null;
+  }, []);
+
+  // On the info page, prevent horizontal swipes on mobile from triggering
+  // browser back/forward gestures.
+  useEffect(() => {
+    const handleTouchStart = (e: TouchEvent) => {
+      if (typeof window !== 'undefined' && window.innerWidth >= 768) return;
+      if (e.touches.length !== 1) return;
+      const t = e.touches[0];
+      infoTouchStartX.current = t.clientX;
+      infoTouchStartY.current = t.clientY;
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (typeof window !== 'undefined' && window.innerWidth >= 768) return;
+      if (e.touches.length !== 1) return;
+      const t = e.touches[0];
+      const dx = Math.abs(t.clientX - infoTouchStartX.current);
+      const dy = Math.abs(t.clientY - infoTouchStartY.current);
+      if (dx > dy && dx > 8) {
+        e.preventDefault();
+      }
+    };
+
+    document.addEventListener('touchstart', handleTouchStart, { capture: true });
+    document.addEventListener('touchmove', handleTouchMove, { capture: true });
+    return () => {
+      document.removeEventListener('touchstart', handleTouchStart, { capture: true });
+      document.removeEventListener('touchmove', handleTouchMove, { capture: true });
+    };
   }, []);
 
   const handleClear = useCallback(() => {
@@ -2295,7 +2327,9 @@ export default function ConesApp() {
                 }
                 sessionStorage.setItem('cones_return_index', String(index));
                 sessionStorage.setItem('cones_return_filter', filter);
-                sessionStorage.setItem('cones_display_list', JSON.stringify(displayCones));
+                // Store the *visible* cones (respecting asc/desc/shuffle) so the profile
+                // page indexes into the same ordering the user saw in the carousel.
+                sessionStorage.setItem('cones_display_list', JSON.stringify(visibleCones));
                 const urlKey = String(index + 1);
                 sessionStorage.setItem('cones_profile_key', urlKey);
                 sessionStorage.setItem('cones_profile_cone', JSON.stringify(cone));

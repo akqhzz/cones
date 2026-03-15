@@ -71,7 +71,7 @@ export default function ConePage() {
       try {
         const key = sessionStorage.getItem('cones_profile_key');
         const cached = sessionStorage.getItem('cones_profile_cone');
-          if (key === idParam && cached) {
+        if (key === idParam && cached) {
           const c = JSON.parse(cached) as Cone;
           sessionStorage.removeItem('cones_profile_key');
           sessionStorage.removeItem('cones_profile_cone');
@@ -85,10 +85,34 @@ export default function ConePage() {
             fetch(`/api/cones?filter=${filter}&session_id=${encodeURIComponent(sid)}`)
               .then((res) => res.json())
               .then((data) => {
-                const list: Cone[] = (data.cones ?? []).sort(
-                  (a: Cone, b: Cone) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-                );
-                const displayCones = list.filter((c: Cone) => !c.is_impostor);
+                const list: Cone[] = (data.cones ?? []) as Cone[];
+                let displayCones = list.filter((c: Cone) => !c.is_impostor);
+
+                // Reapply the sort mode that was active in the carousel when we
+                // navigated here so index-based navigation matches what the user saw.
+                const savedSortMode = (sessionStorage.getItem('cones_sort_mode') as 'asc' | 'desc' | 'random' | null) ?? 'asc';
+                if (savedSortMode === 'desc') {
+                  displayCones = [...displayCones].reverse();
+                } else if (savedSortMode === 'random') {
+                  const orderRaw = sessionStorage.getItem('cones_sort_order');
+                  if (orderRaw) {
+                    try {
+                      const ids = JSON.parse(orderRaw) as string[];
+                      const byId = new Map(displayCones.map((c) => [c.id, c]));
+                      const shuffled: Cone[] = [];
+                      ids.forEach((id) => {
+                        const found = byId.get(id);
+                        if (found) shuffled.push(found);
+                      });
+                      if (shuffled.length === displayCones.length) {
+                        displayCones = shuffled;
+                      }
+                    } catch {
+                      // ignore and fall back to unsorted displayCones
+                    }
+                  }
+                }
+
                 setDisplayCount(displayCones.length);
                 setDisplayCones(displayCones);
                 const fresh = displayCones[arrayIndex];
@@ -124,10 +148,33 @@ export default function ConePage() {
         .then((res) => res.json())
         .then((data) => {
           if (cancelled) return;
-          const list: Cone[] = (data.cones ?? []).sort(
-            (a: Cone, b: Cone) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-          );
-          const displayCones = list.filter((c: Cone) => !c.is_impostor);
+          const list: Cone[] = (data.cones ?? []) as Cone[];
+          let displayCones = list.filter((c: Cone) => !c.is_impostor);
+
+          // Apply the same sort mode as the carousel so /cones/:index matches
+          // the visible ordering (asc/desc/shuffle).
+          const savedSortMode = (sessionStorage.getItem('cones_sort_mode') as 'asc' | 'desc' | 'random' | null) ?? 'asc';
+          if (savedSortMode === 'desc') {
+            displayCones = [...displayCones].reverse();
+          } else if (savedSortMode === 'random') {
+            const orderRaw = sessionStorage.getItem('cones_sort_order');
+            if (orderRaw) {
+              try {
+                const ids = JSON.parse(orderRaw) as string[];
+                const byId = new Map(displayCones.map((c) => [c.id, c]));
+                const shuffled: Cone[] = [];
+                ids.forEach((id) => {
+                  const found = byId.get(id);
+                  if (found) shuffled.push(found);
+                });
+                if (shuffled.length === displayCones.length) {
+                  displayCones = shuffled;
+                }
+              } catch {
+                // ignore and fall back to unsorted displayCones
+              }
+            }
+          }
           const c = displayCones[arrayIndex];
           if (c) {
             setCone(c);

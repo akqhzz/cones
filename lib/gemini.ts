@@ -9,7 +9,7 @@ If it IS a traffic cone:
 {
   "is_impostor": false,
   "description": "2-3 words that name this cone's archetype (as if they're real serious human beings, try avaoid using words like sentinel, guardian, sentry, stoic etc. think beyond the fact that they're cones and they're used for protection. be creative.). focus on its special charcaterics/interaction with the environment, be a bit creative, no cliche. Use simple and short words. Slighltly sarcastic and slightly academic as if you're writing an anthropology report with simple words. sometimes start with "a/an" if there's only one cone; if not, use two, three, etc. or some. make sure it's aligned with the cone's big five. don't add ay punctuations after the words",
-  "about": "2-3 sentences in total. describe this cone as if this cone were a person with a distinct personality and story (mention its special charcaterics/interaction with the environment, be a bit creative), including why it fits its big five personality.Refer it as 'this cone' if therfore's one cone, or 'These cones' if there are multiple. make the language as natural (doesn't sound like AI) as possible. Slighltly sarcastic and slightly academic as if you're writing an anthropology report and philosophy paper with simple words.",
+  "about": "2-3 sentences in total. describe this cone as if this cone were a person with a distinct personality and story (mention its special charcaterics/interaction with the environment, be a bit creative), including why it fits its big five personality. If there are multiple cones, focus on the relationship/dynamics between them.Refer it as 'this cone' if therfore's one cone, or 'These cones' if there are multiple. make the language as natural (doesn't sound like AI) as possible. Slighltly sarcastic and slightly academic as if you're writing an anthropology report and philosophy paper with simple words.",
   "big_five": {
     "openness": 75,
     "conscientiousness": 60,
@@ -23,6 +23,7 @@ If it IS a traffic cone:
 }
 
 Rules:
+- Make sure the description is aligned with the cone's big five.
 - Try to think beyond the normal functions of a cone, think about its special charcaterics/interaction with the environment, be a bit creative, no cliche.
 - Big Five: Analyze this cone's personality using Big Five (OCEAN) theory. Make sure it's aligned with its description. If there are multiple cones in the image, make sure it's high in extraversion. If the cone has a lot of interaction with the environment, make it extraverted too. If one or more cone is pretty tortured/bent/fallen, make it high in neuroticism and low in agreeableness. Give it a roughly 50% to be low in openness. Return a value from 0 to 100 for each of: openness, conscientiousness, extraversion, agreeableness, neuroticism.
 - SLOAN: Return a 5-letter Big Five summary ("SLOAN") based on those values. Order of letters: Extraversion, Neuroticism, Conscientiousness, Agreeableness, Openness. Use standard high/low codes: Extraversion S/R, Neuroticism L/C, Conscientiousness O/U,  Agreeableness A/E, Openness I/N. Example: "RLUAI" means Reserved on openness, Limbic on Neuroticism, etc. make sure there's no space between each letter. 

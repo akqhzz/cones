@@ -2166,7 +2166,18 @@ export default function ConesApp() {
       {/* ── Mobile top filter ── */}
       {activeTab === 'cones' && (
         <div className="md:hidden sticky top-0 z-30 flex items-center justify-between gap-2 px-4 pt-3 pb-1 bg-white">
-          <FilterPills filter={filter} totalCount={totalCount} mineCount={mineCount} onFilter={setFilter} />
+          <div className="flex items-center gap-1">
+            <FilterPills filter={filter} totalCount={totalCount} mineCount={mineCount} onFilter={setFilter} />
+            <button
+              type="button"
+              onClick={() => setSortMode((prev) => (prev === 'asc' ? 'desc' : 'asc'))}
+              className="flex items-center justify-center w-8 h-8 rounded-full bg-white cursor-pointer [&>svg]:w-4 [&>svg]:h-4"
+              aria-label={sortMode === 'asc' ? 'Sort ascending' : 'Sort descending'}
+              title={sortMode === 'asc' ? 'Ascending (click for descending)' : 'Descending (click for ascending)'}
+            >
+              {sortMode === 'asc' ? <SortAscIcon /> : <SortDescIcon />}
+            </button>
+          </div>
           <div className="inline-flex items-center gap-2 rounded-full">
             <button
               type="button"
@@ -2200,7 +2211,7 @@ export default function ConesApp() {
           <InfoTab />
         ) : viewMode === 'index' ? (
           <IndexView
-            cones={displayCones}
+            cones={visibleCones}
             loading={conesLoading}
             scrollToIndex={returnScrollIndex}
             onScrolledToIndex={() => setReturnScrollIndex(null)}
@@ -2208,7 +2219,7 @@ export default function ConesApp() {
               sessionStorage.setItem('cones_return_index', String(index));
               sessionStorage.setItem('cones_return_filter', filter);
               sessionStorage.setItem('cones_return_view', 'index');
-              sessionStorage.setItem('cones_display_list', JSON.stringify(displayCones));
+              sessionStorage.setItem('cones_display_list', JSON.stringify(visibleCones));
               const urlKey = String(index + 1);
               sessionStorage.setItem('cones_profile_key', urlKey);
               sessionStorage.setItem('cones_profile_cone', JSON.stringify(cone));

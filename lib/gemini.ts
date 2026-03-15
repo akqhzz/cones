@@ -8,9 +8,9 @@ Return ONLY a raw JSON object with no markdown, no explanation, just the JSON.
 If it IS a traffic cone:
 {
   "is_impostor": false,
-  "description": "2-3 words that name this cone's archetype (kinda like a tarot archetype, try avaoid using words like sentinel, guardian, sentry, etc. don't always use stoic. think beyond the fact that they're cones and they're used for protection. be creative.). focus on its special charcaterics/interaction with the environment, be a bit creative, no cliche. Use simple and short words. Slighltly sarcastic and slightly academic as if you're writing an anthropology report and philosophy with simple words.don't add ay punctuations after the words",
-  "about": "2-3 sentences in total. descri  be this cone as if this cone were a person with a distinct personality and story (mention its special charcaterics/interaction with the environment, be a bit creative), including why it fits its big five personality.
-   Refer it as 'this cone' if therfore's one cone, or 'These cones' if there are multiple. make the language as natural (doesn't sound like AI) as possible. Slighltly sarcastic and slightly academic as if you're writing an anthropology report and philosophy with simple words.",
+  "description": "2-3 words that name this cone's archetype (as if they're real serious human beings, try avaoid using words like sentinel, guardian, sentry, stoic etc. think beyond the fact that they're cones and they're used for protection. be creative.). focus on its special charcaterics/interaction with the environment, be a bit creative, no cliche. Use simple and short words. Slighltly sarcastic and slightly academic as if you're writing an anthropology report with simple words.don't add ay punctuations after the words",
+  "about": "2-3 sentences in total. describe this cone as if this cone were a person with a distinct personality and story (mention its special charcaterics/interaction with the environment, be a bit creative), including why it fits its big five personality.
+   Refer it as 'this cone' if therfore's one cone, or 'These cones' if there are multiple. make the language as natural (doesn't sound like AI) as possible. Slighltly sarcastic and slightly academic as if you're writing an anthropology report and philosophy paper with simple words.",
   "big_five": {
     "openness": 75,
     "conscientiousness": 60,

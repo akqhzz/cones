@@ -43,6 +43,24 @@ function SortDescIcon() {
   );
 }
 
+// Mobile: asc/dsc icons (from asc.svg / dsc.svg)
+function SortAscIconMobile() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M10 8.25L12 6L14 8.25" stroke="#697281" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M10 14.75L12 17L14 14.75" stroke="#DDDDDD" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+function SortDescIconMobile() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M10 8.25L12 6L14 8.25" stroke="#DDDDDD" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M10 14.75L12 17L14 14.75" stroke="#697281" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 // ── Carousel nav arrows (desktop) ─────────────────────────────────────────────
 function LeftArrowIcon() {
   return (
@@ -2166,16 +2184,16 @@ export default function ConesApp() {
       {/* ── Mobile top filter ── */}
       {activeTab === 'cones' && (
         <div className="md:hidden sticky top-0 z-30 flex items-center justify-between gap-2 px-4 pt-3 pb-1 bg-white">
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5">
             <FilterPills filter={filter} totalCount={totalCount} mineCount={mineCount} onFilter={setFilter} />
             <button
               type="button"
               onClick={() => setSortMode((prev) => (prev === 'asc' ? 'desc' : 'asc'))}
-              className="flex items-center justify-center w-8 h-8 rounded-full bg-white cursor-pointer [&>svg]:w-4 [&>svg]:h-4"
+              className="flex items-center justify-center w-9 h-9 rounded-full bg-white text-gray-600 cursor-pointer -ml-0.5 [&>svg]:w-6 [&>svg]:h-6"
               aria-label={sortMode === 'asc' ? 'Sort ascending' : 'Sort descending'}
               title={sortMode === 'asc' ? 'Ascending (click for descending)' : 'Descending (click for ascending)'}
             >
-              {sortMode === 'asc' ? <SortAscIcon /> : <SortDescIcon />}
+              {sortMode === 'asc' ? <SortAscIconMobile /> : <SortDescIconMobile />}
             </button>
           </div>
           <div className="inline-flex items-center gap-2 rounded-full">

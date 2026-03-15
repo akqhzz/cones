@@ -142,6 +142,11 @@ export default function ConeProfile({
           {isAnalyzing && !cone?.is_analyzed ? (
             <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
               <div className="analyzing-spinner" />
+              <img
+                src="/cone-info.png"
+                alt=""
+                className="w-14 h-14 object-contain"
+              />
               <p className="text-[9px] uppercase">Analyzing cone...</p>
               <p className="text-[9px] text-gray-400 mt-1">Close to continue in background</p>
             </div>

@@ -143,7 +143,7 @@ export default function ConeProfile({
             <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
               <div className="analyzing-spinner" />
               <img
-                src="/cone-info.png"
+                src="/cone-analyzing.png"
                 alt=""
                 className="w-14 h-14 object-contain"
               />

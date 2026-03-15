@@ -646,7 +646,7 @@ function InfoTab() {
     };
 
     document.addEventListener('touchstart', handleTouchStart, { capture: true });
-    document.addEventListener('touchmove', handleTouchMove, { capture: true });
+    document.addEventListener('touchmove', handleTouchMove, { capture: true, passive: false });
     return () => {
       document.removeEventListener('touchstart', handleTouchStart, { capture: true });
       document.removeEventListener('touchmove', handleTouchMove, { capture: true });
@@ -1540,13 +1540,13 @@ export default function ConesApp() {
     };
 
     const handleTouchMove = (e: TouchEvent) => {
-      if (activeTab !== 'cones') return;
-      if (window.innerWidth >= 768) return; // desktop already handled
+      // Prevent browser back/forward (and similar) on both cones and info tabs
+      if (activeTab !== 'cones' && activeTab !== 'info') return;
+      if (window.innerWidth >= 768) return;
       if (e.touches.length !== 1) return;
       const t = e.touches[0];
       const dx = Math.abs(t.clientX - globalTouchStartX.current);
       const dy = Math.abs(t.clientY - globalTouchStartY.current);
-      // For any horizontal-leaning swipe, aggressively prevent browser navigation gesture
       if (dx > dy && dx > 2) {
         e.preventDefault();
       }
@@ -2067,6 +2067,7 @@ export default function ConesApp() {
       className={`flex flex-col h-[100dvh] bg-white overflow-hidden ${
         activeTab === 'cones' ? 'select-none' : ''
       }`}
+      style={{ touchAction: 'pan-y' }}
     >
       {/* ── Crop overlay (mobile & desktop) ── */}
       {isCropping && cropPreviewUrl && (

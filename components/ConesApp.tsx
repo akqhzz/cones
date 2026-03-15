@@ -788,7 +788,7 @@ function InfoTab() {
   }, []);
 
   return (
-    <div className="flex-1 flex flex-col px-6 pt-6 pb-0 md:pb-6">
+    <div className="flex-1 flex flex-col px-6 pt-6 pb-0 md:pb-6 select-none md:select-auto">
       <img
         ref={coneImageRef}
         src="/cone-info.png"

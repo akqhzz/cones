@@ -529,6 +529,20 @@ export const SONGS_BY_SLOAN: Record<string, SongEntry[]> = {
       bandcamp_album_id: '2405195433',
       bandcamp_track_id: '641383633',
     },
+    {
+      song_title: 'Heliosphan',
+      song_artist: 'Aphex Twin',
+      song_url: 'https://open.spotify.com/track/09opLVMX7cfKVKlP3iKZR1?si=30245c3be3214b0b',
+      bandcamp_album_id: '1881652386',
+      bandcamp_track_id: '4007080566',
+    },
+    {
+      song_title: 'Sea-Watch',
+      song_artist: 'Floating Points',
+      song_url: 'https://open.spotify.com/track/343MTAHIcZRw91arzrMeDs?si=942e852da03e4289',
+      bandcamp_album_id: '2422513439',
+      bandcamp_track_id: '1912242148',
+    },
   ],
   RLUEN: [
     {

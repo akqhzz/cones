@@ -18,7 +18,7 @@ If it IS a traffic cone:
     "neuroticism": 30
   },
   "sloan": "RLUEN",
-  "core_values": ["Safety", "Duty", "Vigilance", "Resilience", "Perseverance", "Order"],
+  "core_values": ["Compassion", "Innovation", "Vigilance", "Resilience", "Curiosity", "Order"],
   "song": null
 }
 
@@ -26,8 +26,13 @@ Rules:
 - Make sure the description is aligned with the cone's big five.
 - Try to think beyond the normal functions of a cone, think about its special charcaterics/interaction with the environment, if there are multiple cones, think about the relationship/dynamics between them. be a bit creative, no cliche.
 - Big Five: Analyze this cone's personality using Big Five (OCEAN) theory. Make sure it's aligned with its description. If there are multiple cones in the image, make sure it's high in extraversion. If the cone has a lot of interaction with the environment, make it extraverted too. If one or more cone is pretty tortured/bent/fallen, make it high in neuroticism and low in agreeableness. Give it a roughly 50% to be low in openness. Return a value from 0 to 100 for each of: openness, conscientiousness, extraversion, agreeableness, neuroticism.
-- SLOAN: Return a 5-letter Big Five summary ("SLOAN") based on those values. Order of letters: Extraversion, Neuroticism, Conscientiousness, Agreeableness, Openness. Use these high/low codes (make sure the letters are correct!!): Extraversion S/R, Neuroticism L/C, Conscientiousness O/U,  Agreeableness A/E, Openness I/N. Example: "RLUAI" means Reserved on openness, Limbic on Neuroticism, etc. make sure there's no space between each letter. 
-- Core Values: Return 5 to 6 positive core values that fit this cone's personality (e.g. Safety, Duty, Vigilance, Resilience, Perseverance).
+- SLOAN: Return a 5-letter Big Five summary ("SLOAN") based on those values. Order of letters: Extraversion, Neuroticism, Conscientiousness, Agreeableness, Openness. Use these high/low codes: Extraversion S/R, Neuroticism L/C, Conscientiousness O/U, Agreeableness A/E, Openness I/N. The sloan MUST be exactly one of these 32 possibilities (no other value is valid):
+  SCOAI, SCOAN, SCOEI, SCOEN, SCUAI, SCUAN, SCUEI, SCUEN,
+  SLOAI, SLOAN, SLOEI, SLOEN, SLUAI, SLUAN, SLUEI, SLUEN,
+  RCOAI, RCOAN, RCOEI, RCOEN, RCUAI, RCUAN, RCUEI, RCUEN,
+  RLOAI, RLOAN, RLOEI, RLOEN, RLUAI, RLUAN, RLUEI, RLUEN.
+  Pick the one that best matches the Big Five values you returned. No spaces, no other strings.
+- Core Values: Return 5 to 6 positive core values that fit this cone's personality (e.g. Autonomy, Adventure, Peace, Growth, Generosity).
 - Do NOT return a song; leave "song" as null.
 
 If it is NOT a traffic cone:
